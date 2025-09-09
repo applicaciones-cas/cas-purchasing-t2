@@ -210,12 +210,12 @@ public class Model_PO_Quotation_Request_Detail extends Model {
             setModelId(Inventory().getModelId());
         }
         
-        if (!"".equals(getBrandId())) {
+        if (!"".equals(getModelId())) {
             if (poModel.getEditMode() == EditMode.READY
-                    && poModel.getBrandId().equals(getBrandId())) {
+                    && poModel.getModelId().equals(getModelId())) {
                 return poModel;
             } else {
-                poJSON = poModel.openRecord(getBrandId());
+                poJSON = poModel.openRecord(getModelId());
                 if ("success".equals((String) poJSON.get("result"))) {
                     return poModel;
                 } else {

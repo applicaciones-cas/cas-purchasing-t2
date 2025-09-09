@@ -476,15 +476,15 @@ public class POQuotationRequest extends Transaction {
         }
         
         String lsBranch = fsBranch != null && !"".equals(fsBranch) 
-                                                    ? " AND a.sDescript LIKE " + SQLUtil.toSQL("%"+fsBranch)
+                                                    ? " AND c.sBranchNm LIKE " + SQLUtil.toSQL("%"+fsBranch)
                                                     : "";
         
         String lsDepartment = fsDepartment != null && !"".equals(fsDepartment) 
-                                                    ? " AND a.sDescript LIKE " + SQLUtil.toSQL("%"+fsDepartment)
+                                                    ? " AND d.sDeptName LIKE " + SQLUtil.toSQL("%"+fsDepartment)
                                                     : "";
         
         String lsCategory = fsCateogry != null && !"".equals(fsCateogry) 
-                                                    ? " AND a.sDescript LIKE " + SQLUtil.toSQL("%"+fsCateogry)
+                                                    ? " AND f.sDescript LIKE " + SQLUtil.toSQL("%"+fsCateogry)
                                                     : "";
         
         String lsTransactionDate = fdTransactionDate != null && !"".equals(fdTransactionDate) && !"1900-01-01".equals(fdTransactionDate) 
@@ -499,6 +499,7 @@ public class POQuotationRequest extends Transaction {
         String lsSQL = MiscUtil.addCondition(SQL_BROWSE, 
                    " a.sIndstCdx = " + SQLUtil.toSQL(psIndustryId)
                  + " AND a.sCategrCd = " + SQLUtil.toSQL(psCategorCd)
+                 + " AND a.sBranchCd = " + SQLUtil.toSQL(poGRider.getBranchCode())
                  + lsBranch
                  + lsDepartment
                  + lsCategory
@@ -515,8 +516,8 @@ public class POQuotationRequest extends Transaction {
                 lsSQL,
                 "",
                 "Transaction Date»Transaction No»Branch»Department»Category",
-                "dTransact»sTransNox»Branch»Department»Category", // TODO
-                "a.dTransact»a.sTransNox»Branch»Department»Category", //TODO
+                "dTransact»sTransNox»Branch»Department»Category2", 
+                "a.dTransact»a.sTransNox»c.sBranchNm»d.sDeptName»f.sDescript", 
                 1);
 
         if (poJSON != null) {
@@ -613,12 +614,11 @@ public class POQuotationRequest extends Transaction {
             GuanzonException {
         poJSON = new JSONObject();
         
-        //TODO
-//        if(Master().getCategory() == null || "".equals(Master().getCategory())){
-//            poJSON.put("result", "error");
-//            poJSON.put("message", "Category is not set.");
-//            return poJSON;
-//        }
+        if(Master().getCategoryLevel2()== null || "".equals(Master().getCategoryLevel2())){
+            poJSON.put("result", "error");
+            poJSON.put("message", "Category is not set.");
+            return poJSON;
+        }
         
         Brand object = new ParamControllers(poGRider, logwrapr).Brand();
         object.setRecordStatus(RecordStatus.ACTIVE);
@@ -669,11 +669,11 @@ public class POQuotationRequest extends Transaction {
         poJSON = new JSONObject();
         poJSON.put("row", row);
         
-//        if(Master().getCategory()== null || "".equals(Detail(row).getCategory())){
-//            poJSON.put("result", "error");
-//            poJSON.put("message", "Category is not set.");
-//            return poJSON;
-//        }
+        if(Master().getCategoryLevel2()== null || "".equals(Master().getCategoryLevel2())){
+            poJSON.put("result", "error");
+            poJSON.put("message", "Category is not set.");
+            return poJSON;
+        }
         String lsBrand = Detail(row).getBrandId() != null && !"".equals(Detail(row).getBrandId()) 
                                                     ? " AND a.sBrandIDx = " + SQLUtil.toSQL(Detail(row).getBrandId())
                                                     : "";
@@ -715,15 +715,11 @@ public class POQuotationRequest extends Transaction {
                 Detail(row).setBrandId(object.getModel().getBrandId());
                 Detail(row).setModelId(object.getModel().getModelId());
                    
-//                if(object.getModel().Variant().getSellingPrice() != 0.0000){  //Error TODO
-//                    Detail(row).setSellPrice(object.getModel().Variant().getSellingPrice());
-//                } else {
-                    if(object.getModel().getSellingPrice() != null){
-                        Detail(row).setUnitPrice(object.getModel().getSellingPrice().doubleValue());
-                    } else {
-                        Detail(row).setUnitPrice(0.0000);
-                    }
-//                }
+                if(object.getModel().getSellingPrice() != null){
+                    Detail(row).setUnitPrice(object.getModel().getSellingPrice().doubleValue());
+                } else {
+                    Detail(row).setUnitPrice(0.0000);
+                }
             }
             
             System.out.println("Barcode : " + Detail(row).Inventory().getBarCode());
@@ -1287,8 +1283,6 @@ public class POQuotationRequest extends Transaction {
         for (int lnCtr = 0; lnCtr <= getPOQuotationRequestSupplierCount()- 1; lnCtr++) {
             POQuotationRequestSupplierList(lnCtr).setTransactionNo(Master().getTransactionNo());
             POQuotationRequestSupplierList(lnCtr).setEntryNo(lnCtr+1);
-//            POQuotationRequestSupplierList(lnCtr).setIndustryId(Master().getIndustryId());
-//            POQuotationRequestSupplierList(lnCtr).setCategoryCode(Master().getCategoryCode());
         }
         
         poJSON.put("result", "success");
@@ -1318,7 +1312,7 @@ public class POQuotationRequest extends Transaction {
                     paSuppliers.get(lnCtr).setModifiedDate(poGRider.getServerDate());
                     poJSON = paSuppliers.get(lnCtr).saveRecord();
                     if ("error".equals((String) poJSON.get("result"))) {
-                        System.out.println("Save Sales Inquiry Requirements " + (String) poJSON.get("message"));
+                        System.out.println("Save PO Quotation Request Supplier " + (String) poJSON.get("message"));
                         poJSON.put("result", "error");
                         poJSON.put("message", (String) poJSON.get("message"));
                         return poJSON;
