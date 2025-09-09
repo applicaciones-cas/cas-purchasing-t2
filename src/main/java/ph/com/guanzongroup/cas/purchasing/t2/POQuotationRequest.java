@@ -834,7 +834,7 @@ public class POQuotationRequest extends Transaction {
     }
     
     /*Load*/
-    public JSONObject loadPOQuotationRequestList(String industryId, String branch, String department, String category2, Date date, String referenceNo) {
+    public JSONObject loadPOQuotationRequestList(String branch, String department, String category2, Date date, String referenceNo) {
         try {
 
             String lsTransStat = "";
@@ -850,21 +850,15 @@ public class POQuotationRequest extends Transaction {
             }
 
             initSQL();
-            String lsSQL = MiscUtil.addCondition(SQL_BROWSE, " a.sIndstCdx = " + SQLUtil.toSQL(industryId)
+            String lsSQL = MiscUtil.addCondition(SQL_BROWSE, " a.sIndstCdx = " + SQLUtil.toSQL(psIndustryId)
                     + " AND a.sCategrCd = " + SQLUtil.toSQL(psCategorCd)
-                    + " AND a.sBranchCd LIKE " + SQLUtil.toSQL("%" + branch)
-                    + " AND a.sBranchCd LIKE " + SQLUtil.toSQL("%" + category2) //TODO
-                    + " AND b.sCompnyNm LIKE " + SQLUtil.toSQL("%" + department) //TODO
+                    + " AND c.sBranchNm LIKE " + SQLUtil.toSQL("%" + branch)
+                    + " AND f.sDescript LIKE " + SQLUtil.toSQL("%" + category2) //TODO
+                    + " AND d.sDeptName LIKE " + SQLUtil.toSQL("%" + department) //TODO
                     + " AND a.sTransNox LIKE " + SQLUtil.toSQL("%" + referenceNo)
-                    + " AND a.cProcessd = '0' "
+//                    + " AND a.cProcessd = '0' "
             );
             
-            //If current user is an ordinary user load only its inquiries
-            if (poGRider.getUserLevel() <= UserRight.ENCODER) {
-                lsSQL = MiscUtil.addCondition(lsSQL, 
-                        " a.sSalesman = " + SQLUtil.toSQL(poGRider.getUserID()));
-            }
-
             if (lsTransStat != null && !"".equals(lsTransStat)) {
                 lsSQL = lsSQL + lsTransStat;
             }
@@ -883,7 +877,6 @@ public class POQuotationRequest extends Transaction {
                     // Print the result set
                     System.out.println("sTransNox: " + loRS.getString("sTransNox"));
                     System.out.println("dTransact: " + loRS.getDate("dTransact"));
-                    System.out.println("sCompnyNm: " + loRS.getString("sClientNm"));
                     System.out.println("------------------------------------------------------------------------------");
 
                     paMasterList.add(POQuotationRequestMaster());
@@ -1381,24 +1374,28 @@ public class POQuotationRequest extends Transaction {
 
     @Override
     public void initSQL() {
-        SQL_BROWSE =  " SELECT "
-                    + " a.sTransNox "
-                    + " , a.dTransact "
-                    + " , a.cTranStat "
-                    + " , a.sClientID "
-                    + " , b.sCompnyNm AS sClientNm "
-                    + " , concat(c.sLastName,', ',c.sFrstName, ' ',c.sMiddName) AS sSalePrsn "
-                    + " , d.sCompnyNm AS sAgentNme "
-                    + " , e.sBranchNm "
-                    + " , f.sCompnyNm "
-                    + " , g.sDescript "
-                    + " FROM sales_inquiry_master a "
-                    + " LEFT JOIN client_master b ON b.sClientID = a.sClientID "
-                    + " LEFT JOIN salesman c ON c.sEmployID = a.sSalesman "
-                    + " LEFT JOIN client_master d ON d.sClientID = a.sAgentIDx "
-                    + " LEFT JOIN branch e ON e.sBranchCd = a.sBranchCd "
-                    + " LEFT JOIN company f ON f.sCompnyID = a.sCompnyID "
-                    + " LEFT JOIN industry g ON g.sIndstCdx = a.sIndstCdx " ;
+        SQL_BROWSE =  " SELECT         "
+                    + "    a.sTransNox "
+                    + "  , a.sIndstCdx "
+                    + "  , a.sBranchCd "
+                    + "  , a.sDeptIDxx "
+                    + "  , a.sCategrCd "
+                    + "  , a.dTransact "
+                    + "  , a.sCategCd2 "
+                    + "  , a.sDestinat "
+                    + "  , a.sReferNox "
+                    + "  , a.cTranStat "
+                    + "  , b.sDescript AS Industry   "
+                    + "  , c.sBranchNm AS Branch     "
+                    + "  , d.sDeptName AS Department "
+                    + "  , e.sDescript AS Category   "
+                    + "  , f.sDescript AS Category2  "
+                    + " FROM po_quotation_request_master a "
+                    + " LEFT JOIN industry b ON b.sIndstCdx = a.sIndstCdx        "
+                    + " LEFT JOIN branch c ON c.sBranchCd = a.sBranchCd          "
+                    + " LEFT JOIN department d ON d.sDeptIDxx = a.sDeptIDxx      "
+                    + " LEFT JOIN category e ON e.sCategrCd = a.sCategrCd        "
+                    + " LEFT JOIN category_level2 f ON f.sCategrCd = a.sCategCd2 " ;
         
     }
 }

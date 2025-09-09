@@ -265,12 +265,12 @@ public class Model_PO_Quotation_Request_Supplier extends Model {
     }
     
     public Model_Client_Master Supplier() throws SQLException, GuanzonException {
-        if (!"".equals((String) getValue("sClientID"))) {
+        if (!"".equals((String) getValue("sSupplier"))) {
             if (poSupplier.getEditMode() == EditMode.READY
-                    && poSupplier.getClientId().equals((String) getValue("sClientID"))) {
+                    && poSupplier.getClientId().equals((String) getValue("sSupplier"))) {
                 return poSupplier;
             } else {
-                poJSON = poSupplier.openRecord((String) getValue("sClientID"));
+                poJSON = poSupplier.openRecord((String) getValue("sSupplier"));
 
                 if ("success".equals((String) poJSON.get("result"))) {
                     return poSupplier;

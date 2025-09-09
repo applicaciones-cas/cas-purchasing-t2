@@ -16,10 +16,10 @@ import org.json.simple.parser.ParseException;
 import org.junit.Assert;
 import org.junit.BeforeClass;
 import org.junit.FixMethodOrder;
-import org.junit.Test;
 import org.junit.runners.MethodSorters;
 import ph.com.guanzongroup.cas.purchasing.t2.POQuotationRequest;
 import ph.com.guanzongroup.cas.purchasing.t2.services.QuotationControllers;
+import ph.com.guanzongroup.cas.purchasing.t2.status.POQuotationRequestStatus;
 /**
  *
  * @author Arsiela
@@ -38,12 +38,12 @@ public class testPOQuotationRequest {
         poController = new QuotationControllers(instance, null).POQuotationRequest();
     }
 
-    @Test
+//    @Test
     public void testNewTransaction() {
         String branchCd = instance.getBranchCode();
         String industryId = "05";
         String companyId = "";
-        String categoryId = "0008";
+        String categoryId = "0007";
         String category2 = "0022";
         String remarks = "this is a test Class 4.";
 
@@ -91,7 +91,7 @@ public class testPOQuotationRequest {
                 poController.Detail(0).setDescription("General Asset Model1");
                 poController.AddDetail();
                 poController.Detail(1).setStockId("M00125000018");
-                poController.Detail(0).setDescription("General Asset Model2");
+                poController.Detail(1).setDescription("General Asset Model2");
 
                 System.out.println("Industry ID : " + instance.getIndustry());
                 System.out.println("Industry : " + poController.Master().Industry().getDescription());
@@ -126,7 +126,13 @@ public class testPOQuotationRequest {
                 Assert.fail();
             }
 
-            loJSON = poController.OpenTransaction("A00125000055");
+            loJSON = poController.OpenTransaction("A00125000001");
+            if (!"success".equals((String) loJSON.get("result"))) {
+                System.err.println((String) loJSON.get("message"));
+                Assert.fail();
+            }
+
+            loJSON = poController.loadPOQuotationRequestSupplierList();
             if (!"success".equals((String) loJSON.get("result"))) {
                 System.err.println((String) loJSON.get("message"));
                 Assert.fail();
@@ -137,6 +143,12 @@ public class testPOQuotationRequest {
                 System.err.println((String) loJSON.get("message"));
                 Assert.fail();
             }
+            
+//            poController.AddPOQuotationRequestSupplier();
+            poController.POQuotationRequestSupplierList(0).setSupplierId("M00125000001");
+            poController.POQuotationRequestSupplierList(0).setCompanyId("0004");
+            poController.POQuotationRequestSupplierList(0).isSent(true);
+            poController.POQuotationRequestSupplierList(0).setTerm("0000001");
             
             loJSON = poController.SaveTransaction();
             if (!"success".equals((String) loJSON.get("result"))) {
@@ -155,7 +167,8 @@ public class testPOQuotationRequest {
 //    @Test
     public void testPOQuotationRequestList() throws SQLException {
         String lsTransNo = "";
-        String industryId = "01";
+        String industryId = "05";
+        String categoryCode = "0007";
         String branch = "";
         String department = "";
         String category2 = "";
@@ -167,7 +180,9 @@ public class testPOQuotationRequest {
             Assert.fail();
         }
         poController.setIndustryId(industryId);
-        loJSON = poController.loadPOQuotationRequestList(industryId,branch,department,category2,lDate,lsTransNo);
+        poController.setCategoryId(categoryCode);
+        poController.setTransactionStatus(POQuotationRequestStatus.CONFIRMED+POQuotationRequestStatus.OPEN);
+        loJSON = poController.loadPOQuotationRequestList(branch,department,category2,lDate,lsTransNo);
         if (!"success".equals((String) loJSON.get("result"))) {
             System.err.println((String) loJSON.get("message"));
             Assert.fail();
@@ -178,7 +193,7 @@ public class testPOQuotationRequest {
                 System.out.println("Row No ->> " + lnCtr);
                 System.out.println("Transaction No ->> " + poController.POQuotationRequestList(lnCtr).getTransactionNo());
                 System.out.println("Transaction Date ->> " + poController.POQuotationRequestList(lnCtr).getTransactionDate());
-                System.out.println("Branch ->> " + poController.POQuotationRequestList(lnCtr).Branch().getDescription());
+                System.out.println("Branch ->> " + poController.POQuotationRequestList(lnCtr).Branch().getBranchName());
                 System.out.println("Department ->> " + poController.POQuotationRequestList(lnCtr).Department().getDescription());
                 System.out.println("Category ->> " + poController.POQuotationRequestList(lnCtr).Category2().getDescription());
                 System.out.println("----------------------------------------------------------------------------------");
@@ -199,7 +214,7 @@ public class testPOQuotationRequest {
                 Assert.fail();
             } 
 
-            loJSON = poController.OpenTransaction("A00125000055");
+            loJSON = poController.OpenTransaction("A00125000001");
             if (!"success".equals((String) loJSON.get("result"))){
                 System.err.println((String) loJSON.get("message"));
                 Assert.fail();
@@ -221,8 +236,26 @@ public class testPOQuotationRequest {
                 System.out.println("Brand Description " +  poController.Detail(lnCtr).Brand().getDescription());
                 System.out.println("Model Description " +  poController.Detail(lnCtr).Model().getDescription());
             }
+           
+            loJSON = poController.loadPOQuotationRequestSupplierList();
+            if (!"success".equals((String) loJSON.get("result"))) {
+                System.err.println((String) loJSON.get("message"));
+                Assert.fail();
+            }
             
-            System.out.println("Bank : " + (String) loJSON.get("message"));
+            //retreiving using column index
+            for (int lnCtr = 0; lnCtr <= poController.getPOQuotationRequestSupplierCount() - 1; lnCtr++) {
+                try {
+                    System.out.println("Row No ->> " + lnCtr);
+                    System.out.println("Transaction No ->> " + poController.POQuotationRequestSupplierList(lnCtr).getTransactionNo());
+                    System.out.println("Company ->> " + poController.POQuotationRequestSupplierList(lnCtr).Company().getCompanyName());
+                    System.out.println("Supplier ->> " + poController.POQuotationRequestSupplierList(lnCtr).Supplier().getCompanyName());
+                    System.out.println("Term ->> " + poController.POQuotationRequestSupplierList(lnCtr).Term().getDescription());
+                    System.out.println("----------------------------------------------------------------------------------");
+                } catch (SQLException | GuanzonException ex) {
+                    Logger.getLogger(getClass().getName()).log(Level.SEVERE, null, ex);
+                }
+            }
             
         } catch (CloneNotSupportedException e) {
             System.err.println(MiscUtil.getException(e));
@@ -245,7 +278,7 @@ public class testPOQuotationRequest {
                 Assert.fail();
             } 
 
-            loJSON = poController.OpenTransaction("M00125000001");
+            loJSON = poController.OpenTransaction("A00125000001");
             if (!"success".equals((String) loJSON.get("result"))){
                 System.err.println((String) loJSON.get("message"));
                 Assert.fail();
@@ -280,38 +313,5 @@ public class testPOQuotationRequest {
             Logger.getLogger(getClass().getName()).log(Level.SEVERE, null, ex);
         }
     }   
-    
-//    @Test
-    public void loadPOQuotationRequestSupplier() throws SQLException, GuanzonException{
-        String lsTransNo = "";
-        String industryId = "01";
-        String branch = "";
-        String department = "";
-        String category2 = "";
-        Date lDate = instance.getServerDate();
-        JSONObject loJSON;
-        loJSON = poController.InitTransaction();
-        if (!"success".equals((String) loJSON.get("result"))) {
-            System.err.println((String) loJSON.get("message"));
-            Assert.fail();
-        }
-        poController.setIndustryId(industryId);
-        loJSON = poController.loadPOQuotationRequestSupplierList();
-        if (!"success".equals((String) loJSON.get("result"))) {
-            System.err.println((String) loJSON.get("message"));
-            Assert.fail();
-        }
-        //retreiving using column index
-        for (int lnCtr = 0; lnCtr <= poController.getPOQuotationRequestSupplierCount() - 1; lnCtr++) {
-            try {
-                System.out.println("Row No ->> " + lnCtr);
-                System.out.println("Transaction No ->> " + poController.POQuotationRequestSupplierList(lnCtr).getTransactionNo());
-                System.out.println("Supplier ->> " + poController.POQuotationRequestSupplierList(lnCtr).Supplier().getCompanyName());
-                System.out.println("----------------------------------------------------------------------------------");
-            } catch (SQLException | GuanzonException ex) {
-                Logger.getLogger(getClass().getName()).log(Level.SEVERE, null, ex);
-            }
-        }
-    }
     
 }

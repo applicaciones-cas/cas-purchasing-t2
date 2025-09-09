@@ -30,6 +30,7 @@ public class Model_PO_Quotation_Request_Master extends Model {
     String psSearchCategory = "";
     
     Model_Branch poBranch;
+    Model_Branch poDestination;
     Model_Industry poIndustry;
     Model_Company poCompany;
     Model_Department poDepartment;
@@ -66,6 +67,7 @@ public class Model_PO_Quotation_Request_Master extends Model {
             //initialize reference objects
             ParamModels model = new ParamModels(poGRider);
             poBranch = model.Branch();
+            poDestination = model.Branch(); 
             poIndustry = model.Industry();
             poCompany = model.Company();
             poDepartment = model.Department();
@@ -248,6 +250,27 @@ public class Model_PO_Quotation_Request_Master extends Model {
         } else {
             poBranch.initialize();
             return poBranch;
+        }
+    }
+    
+    public Model_Branch Destination() throws SQLException, GuanzonException {
+        if (!"".equals((String) getValue("sDestinat"))) {
+            if (poDestination.getEditMode() == EditMode.READY
+                    && poDestination.getBranchCode().equals((String) getValue("sDestinat"))) {
+                return poDestination;
+            } else {
+                poJSON = poDestination.openRecord((String) getValue("sDestinat"));
+
+                if ("success".equals((String) poJSON.get("result"))) {
+                    return poDestination;
+                } else {
+                    poDestination.initialize();
+                    return poDestination;
+                }
+            }
+        } else {
+            poDestination.initialize();
+            return poDestination;
         }
     }
 
