@@ -296,12 +296,12 @@ public class Model_PO_Quotation_Request_Master extends Model {
     }
     
     public Model_Category_Level2 Category2() throws GuanzonException, SQLException {
-        if (!"".equals((String) getValue("sCategrCd"))) {
+        if (!"".equals((String) getValue("sCategCd2"))) {
             if (poCategory.getEditMode() == EditMode.READY
-                    && poCategory.getCategoryId().equals((String) getValue("sCategrCd"))) {
+                    && poCategory.getCategoryId().equals((String) getValue("sCategCd2"))) {
                 return poCategory;
             } else {
-                poJSON = poCategory.openRecord((String) getValue("sCategrCd"));
+                poJSON = poCategory.openRecord((String) getValue("sCategCd2"));
 
                 if ("success".equals((String) poJSON.get("result"))) {
                     return poCategory;
