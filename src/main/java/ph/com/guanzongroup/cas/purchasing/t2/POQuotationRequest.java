@@ -66,7 +66,7 @@ public class POQuotationRequest extends Transaction {
     List<Model_PO_Quotation_Request_Supplier> paSuppliers;
     
     public JSONObject InitTransaction() {
-        SOURCE_CODE = "PORq";
+        SOURCE_CODE = "POQR";
 
         poMaster = new QuotationModels(poGRider).POQuotationRequestMaster();
         poDetail = new QuotationModels(poGRider).POQuotationRequestDetails();
