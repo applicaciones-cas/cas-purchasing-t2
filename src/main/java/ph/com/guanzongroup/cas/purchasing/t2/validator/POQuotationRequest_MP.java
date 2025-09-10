@@ -104,10 +104,10 @@ public class POQuotationRequest_MP implements GValidator{
             return poJSON;
         }
         
-        if (loTargetDate == null) {
-            poJSON.put("message", "Invalid Expected Date.");
-            return poJSON;
-        }
+//        if (loTargetDate == null) {
+//            poJSON.put("message", "Invalid Expected Date.");
+//            return poJSON;
+//        }
         
         if (poMaster.getIndustryId() == null) {
             poJSON.put("message", "Industry is not set.");

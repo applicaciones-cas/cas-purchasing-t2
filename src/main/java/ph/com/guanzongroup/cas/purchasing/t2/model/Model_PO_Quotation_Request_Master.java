@@ -12,6 +12,7 @@ import org.guanzon.appdriver.base.GuanzonException;
 import org.guanzon.appdriver.base.MiscUtil;
 import org.guanzon.appdriver.constant.EditMode;
 import org.guanzon.cas.parameter.model.Model_Branch;
+import org.guanzon.cas.parameter.model.Model_Category;
 import org.guanzon.cas.parameter.model.Model_Category_Level2;
 import org.guanzon.cas.parameter.model.Model_Company;
 import org.guanzon.cas.parameter.model.Model_Department;
@@ -34,7 +35,8 @@ public class Model_PO_Quotation_Request_Master extends Model {
     Model_Industry poIndustry;
     Model_Company poCompany;
     Model_Department poDepartment;
-    Model_Category_Level2 poCategory;
+    Model_Category poCategory;
+    Model_Category_Level2 poCategory2;
     
     @Override
     public void initialize() {
@@ -71,7 +73,8 @@ public class Model_PO_Quotation_Request_Master extends Model {
             poIndustry = model.Industry();
             poCompany = model.Company();
             poDepartment = model.Department();
-            poCategory = model.Category2();
+            poCategory2 = model.Category2();
+            poCategory = model.Category(); 
 //            end - initialize reference objects
 
             pnEditMode = EditMode.UNKNOWN;
@@ -295,13 +298,13 @@ public class Model_PO_Quotation_Request_Master extends Model {
         }
     }
     
-    public Model_Category_Level2 Category2() throws GuanzonException, SQLException {
-        if (!"".equals((String) getValue("sCategCd2"))) {
+    public Model_Category Category() throws GuanzonException, SQLException {
+        if (!"".equals((String) getValue("sCategrCd"))) {
             if (poCategory.getEditMode() == EditMode.READY
-                    && poCategory.getCategoryId().equals((String) getValue("sCategCd2"))) {
+                    && poCategory.getCategoryId().equals((String) getValue("sCategrCd"))) {
                 return poCategory;
             } else {
-                poJSON = poCategory.openRecord((String) getValue("sCategCd2"));
+                poJSON = poCategory.openRecord((String) getValue("sCategrCd"));
 
                 if ("success".equals((String) poJSON.get("result"))) {
                     return poCategory;
@@ -313,6 +316,27 @@ public class Model_PO_Quotation_Request_Master extends Model {
         } else {
             poCategory.initialize();
             return poCategory;
+        }
+    }
+    
+    public Model_Category_Level2 Category2() throws GuanzonException, SQLException {
+        if (!"".equals((String) getValue("sCategCd2"))) {
+            if (poCategory2.getEditMode() == EditMode.READY
+                    && poCategory2.getCategoryId().equals((String) getValue("sCategCd2"))) {
+                return poCategory2;
+            } else {
+                poJSON = poCategory2.openRecord((String) getValue("sCategCd2"));
+
+                if ("success".equals((String) poJSON.get("result"))) {
+                    return poCategory2;
+                } else {
+                    poCategory2.initialize();
+                    return poCategory2;
+                }
+            }
+        } else {
+            poCategory2.initialize();
+            return poCategory2;
         }
     }
 
@@ -361,22 +385,22 @@ public class Model_PO_Quotation_Request_Master extends Model {
 //    
 //    public Model_Category_Level2 SearchCategory2() throws GuanzonException, SQLException {
 //        if (!"".equals(psSearchCategory)) {
-//            if (poCategory.getEditMode() == EditMode.READY
-//                    && poCategory.getCategoryId().equals(psSearchCategory)) {
-//                return poCategory;
+//            if (poCategory2.getEditMode() == EditMode.READY
+//                    && poCategory2.getCategoryId().equals(psSearchCategory)) {
+//                return poCategory2;
 //            } else {
-//                poJSON = poCategory.openRecord(psSearchCategory);
+//                poJSON = poCategory2.openRecord(psSearchCategory);
 //
 //                if ("success".equals((String) poJSON.get("result"))) {
-//                    return poCategory;
+//                    return poCategory2;
 //                } else {
-//                    poCategory.initialize();
-//                    return poCategory;
+//                    poCategory2.initialize();
+//                    return poCategory2;
 //                }
 //            }
 //        } else {
-//            poCategory.initialize();
-//            return poCategory;
+//            poCategory2.initialize();
+//            return poCategory2;
 //        }
 //    }
 }

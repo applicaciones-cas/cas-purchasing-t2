@@ -37,6 +37,7 @@ import org.guanzon.cas.parameter.Department;
 import org.guanzon.cas.parameter.ModelVariant;
 import org.guanzon.cas.parameter.Term;
 import org.guanzon.cas.parameter.services.ParamControllers;
+import org.guanzon.cas.parameter.services.ParamModels;
 import org.json.simple.JSONObject;
 import org.json.simple.parser.ParseException;
 import ph.com.guanzongroup.cas.purchasing.t2.model.Model_PO_Quotation_Request_Detail;
@@ -577,9 +578,24 @@ public class POQuotationRequest extends Transaction {
     public JSONObject SearchCategory(String value, boolean byCode, boolean isSearch) throws SQLException, GuanzonException {
         poJSON = new JSONObject();
         
+//        CategoryLevel2 object = new ParamControllers(poGRider, logwrapr).CategoryLevel2();
+//        object.setRecordStatus(RecordStatus.ACTIVE);
+//
+//        poJSON = object.searchRecord(value, byCode);
+//        if ("success".equals((String) poJSON.get("result"))) {
+//            if(isSearch){
+//                setSearchCategory(object.getModel().getDescription());
+//            } else {
+//                System.out.println("Category ID: " + object.getModel().getCategoryId());
+//                System.out.println("Description " + object.getModel().getDescription());
+//                Master().setCategoryLevel2(object.getModel().getCategoryId());
+//            }
+//        }
+        
+        
         CategoryLevel2 object = new ParamControllers(poGRider, logwrapr).CategoryLevel2();
         String lsSQL = MiscUtil.addCondition(object.getSQ_Browse(), "cRecdStat = " + SQLUtil.toSQL(RecordStatus.ACTIVE)
-                                            + " AND sIndstCdx = " + SQLUtil.toSQL(Master().getIndustryId()));
+                                            + " AND (sIndstCdx = '' OR ISNULL(sIndstCdx))"); //+ SQLUtil.toSQL(Master().getIndustryId()));
         
         System.out.println("Executing SQL: " + lsSQL);
         poJSON = ShowDialogFX.Browse(poGRider,
@@ -596,6 +612,8 @@ public class POQuotationRequest extends Transaction {
                 if(isSearch){
                     setSearchCategory(object.getModel().getDescription());
                 } else {
+                    System.out.println("Category2 ID: " + object.getModel().getCategoryId());
+                    System.out.println("Description " + object.getModel().getDescription());
                     Master().setCategoryLevel2(object.getModel().getCategoryId());
                 }
             }
@@ -623,7 +641,8 @@ public class POQuotationRequest extends Transaction {
         Brand object = new ParamControllers(poGRider, logwrapr).Brand();
         object.setRecordStatus(RecordStatus.ACTIVE);
 
-        poJSON = object.searchRecord(value, byCode, Master().getIndustryId());
+//        poJSON = object.searchRecord(value, byCode, Master().getIndustryId());
+        poJSON = object.searchRecord(value, byCode, ""); //empPag nasa general empty yung industry according to ma'am she
         if ("success".equals((String) poJSON.get("result"))) {
             if (!object.getModel().getBrandId().equals(Detail(row).getBrandId())) {
                 Detail(row).setModelId("");
@@ -682,10 +701,10 @@ public class POQuotationRequest extends Transaction {
                                                     : "";
         Inventory object = new InvControllers(poGRider, logwrapr).Inventory();
         String lsSQL = MiscUtil.addCondition(object.getSQ_Browse(), 
-                                            // " a.cRecdStat = " + SQLUtil.toSQL(RecordStatus.ACTIVE)
+                                             //" a.cRecdStat = " + SQLUtil.toSQL(RecordStatus.ACTIVE)
                                             " a.sCategCd1 = " + SQLUtil.toSQL(Master().getCategoryCode())
-                                            + " AND a.sIndstCdx = " + SQLUtil.toSQL(Master().getIndustryId())
-//                                            + " AND a.sCategCd2 = " + SQLUtil.toSQL(Master().getCategory())
+//                                            + " AND a.sIndstCdx = " + SQLUtil.toSQL(Master().getIndustryId())
+                                            + " AND a.sCategCd2 = " + SQLUtil.toSQL(Master().getCategoryLevel2())
                                             + lsBrand
                                             + lsModel
                                             );
