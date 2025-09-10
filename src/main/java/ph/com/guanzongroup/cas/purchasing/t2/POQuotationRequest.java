@@ -716,15 +716,16 @@ public class POQuotationRequest extends Transaction {
         if (poJSON != null) {
             poJSON = object.getModel().openRecord((String) poJSON.get("sStockIDx"));
             if ("success".equals((String) poJSON.get("result"))) {
-                poJSON = checkExistingDetail(row,
+                JSONObject loJSON = checkExistingDetail(row,
                         object.getModel().getStockId(),
-                        object.getModel().getDescription()
+                        object.getModel().getDescription(), 
+                        true
                         );
-                if ("error".equals((String) poJSON.get("result"))) {
-                    if((boolean) poJSON.get("reverse")){
-                        return poJSON;
+                if ("error".equals((String) loJSON.get("result"))) {
+                    if((boolean) loJSON.get("reverse")){
+                        return loJSON;
                     } else {
-                        row = (int) poJSON.get("row");
+                        row = (int) loJSON.get("row");
                         Detail(row).isReverse(true);
                     }
                 }
@@ -739,7 +740,7 @@ public class POQuotationRequest extends Transaction {
                 } else {
                     Detail(row).setUnitPrice(0.0000);
                 }
-            }
+            } 
             
             System.out.println("Barcode : " + Detail(row).Inventory().getBarCode());
             System.out.println("Description : " + Detail(row).Inventory().getDescription());
@@ -751,6 +752,30 @@ public class POQuotationRequest extends Transaction {
             poJSON = new JSONObject();
             poJSON.put("result", "error");
             poJSON.put("message", "No record loaded.");
+        }
+        
+        if ("error".equals((String) poJSON.get("result"))) {
+            if(!"".equals(value)){
+                poJSON = checkExistingDetail(row,
+                        "",
+                        value,
+                        false
+                        );
+                if ("error".equals((String) poJSON.get("result"))) {
+                    if((boolean) poJSON.get("reverse")){
+                        return poJSON;
+                    } else {
+                        row = (int) poJSON.get("row");
+                        Detail(row).isReverse(true);
+                    }
+                }
+            }
+
+            Detail(row).setStockId("");
+            Detail(row).setBrandId("");
+            Detail(row).setModelId("");
+            Detail(row).setDescription(value);
+            Detail(row).setUnitPrice(0.0000);
         }
         
         poJSON.put("result", "success");
@@ -792,7 +817,7 @@ public class POQuotationRequest extends Transaction {
     }
     
     /*Validate*/
-    public JSONObject checkExistingDetail(int row, String stockId, String description){
+    public JSONObject checkExistingDetail(int row, String stockId, String description, boolean isSearch){
         poJSON = new JSONObject();
         poJSON.put("row", row);
         if(stockId == null){
@@ -809,7 +834,8 @@ public class POQuotationRequest extends Transaction {
             if (lnCtr != row) {
                 //Check Existing Stock ID and Description
                 if(!"".equals(stockId) || !"".equals(description)){
-                    if(stockId.equals(Detail(lnCtr).getStockId()) || description.equals(Detail(lnCtr).getDescription())){
+                    if((stockId.equals(Detail(lnCtr).getStockId())  && isSearch )
+                            || (description.equals(Detail(lnCtr).getDescription()))){
                         if(Detail(lnCtr).isReverse()){
                             poJSON.put("result", "error");
                             poJSON.put("message", "Item Description already exists in the transaction detail at row "+lnRow+".");
@@ -859,8 +885,28 @@ public class POQuotationRequest extends Transaction {
     }
     
     /*Load*/
-    public JSONObject loadPOQuotationRequestList(String branch, String department, String category2, Date date, String referenceNo) {
+    public JSONObject loadPOQuotationRequestList(String fsBranch, String fsDepartment, String fsCateogry, Date fdTransactionDate, String fsTransactionNo) {
         try {
+            
+            String lsBranch = fsBranch != null && !"".equals(fsBranch) 
+                                                        ? " AND c.sBranchNm LIKE " + SQLUtil.toSQL("%"+fsBranch)
+                                                        : "";
+
+            String lsDepartment = fsDepartment != null && !"".equals(fsDepartment) 
+                                                        ? " AND d.sDeptName LIKE " + SQLUtil.toSQL("%"+fsDepartment)
+                                                        : "";
+
+            String lsCategory = fsCateogry != null && !"".equals(fsCateogry) 
+                                                        ? " AND f.sDescript LIKE " + SQLUtil.toSQL("%"+fsCateogry)
+                                                        : "";
+
+            String lsTransactionDate = fdTransactionDate != null && !"".equals(fdTransactionDate) && !"1900-01-01".equals(xsDateShort(fdTransactionDate)) 
+                                                        ? " AND a.dTransact = " + SQLUtil.toSQL(xsDateShort(fdTransactionDate))
+                                                        : "";
+
+            String lsTransactionNo = fsTransactionNo != null && !"".equals(fsTransactionNo) 
+                                                        ? " AND a.sTransNox LIKE " + SQLUtil.toSQL("%"+fsTransactionNo)
+                                                        : "";
 
             String lsTransStat = "";
             if (psTranStat != null) {
@@ -877,11 +923,11 @@ public class POQuotationRequest extends Transaction {
             initSQL();
             String lsSQL = MiscUtil.addCondition(SQL_BROWSE, " a.sIndstCdx = " + SQLUtil.toSQL(psIndustryId)
                     + " AND a.sCategrCd = " + SQLUtil.toSQL(psCategorCd)
-                    + " AND c.sBranchNm LIKE " + SQLUtil.toSQL("%" + branch)
-                    + " AND f.sDescript LIKE " + SQLUtil.toSQL("%" + category2) //TODO
-                    + " AND d.sDeptName LIKE " + SQLUtil.toSQL("%" + department) //TODO
-                    + " AND a.sTransNox LIKE " + SQLUtil.toSQL("%" + referenceNo)
-//                    + " AND a.cProcessd = '0' "
+                    + lsBranch
+                    + lsDepartment
+                    + lsCategory
+                    + lsTransactionDate
+                    + lsTransactionNo
             );
             
             if (lsTransStat != null && !"".equals(lsTransStat)) {
@@ -957,9 +1003,9 @@ public class POQuotationRequest extends Transaction {
         String lsModelId = "";
         int lnCtr = getDetailCount() - 1;
         while (lnCtr >= 0) {
-            System.out.println("Brand : " + Detail(lnCtr).getBrandId());
-            System.out.println("Model : " + Detail(lnCtr).getModelId());
-            System.out.println("Description : " + Detail(lnCtr).getDescription());
+//            System.out.println("Brand : " + Detail(lnCtr).getBrandId());
+//            System.out.println("Model : " + Detail(lnCtr).getModelId());
+//            System.out.println("Description : " + Detail(lnCtr).getDescription());
             if ((Detail(lnCtr).getStockId() == null || "".equals(Detail(lnCtr).getStockId()))
                     && (Detail(lnCtr).getDescription()== null || "".equals(Detail(lnCtr).getDescription()))) {
                 
@@ -974,6 +1020,7 @@ public class POQuotationRequest extends Transaction {
                 }
                 
                 if(Detail(lnCtr).getEditMode() == EditMode.ADDNEW){
+//                    System.out.println("Delete Detail : " + lnCtr);
                     deleteDetail(lnCtr); 
                     //Detail().remove(lnCtr);
                 }
@@ -1299,6 +1346,24 @@ public class POQuotationRequest extends Transaction {
         
         Master().setModifyingId(poGRider.Encrypt(poGRider.getUserID()));
         Master().setModifiedDate(poGRider.getServerDate());
+        
+        //Check detail
+        boolean lbWillDelete = true;
+        for(int lnCtr = 0; lnCtr <= getDetailCount()-1; lnCtr++){
+            if (
+//                    ((Detail(lnCtr).getDescription() != null && !"".equals(Detail(lnCtr).getDescription()))
+//                  ||  (Detail(lnCtr).getStockId() != null && !"".equals(Detail(lnCtr).getStockId())))
+                   (Detail(lnCtr).getQuantity() > 0.00) && Detail(lnCtr).isReverse() ) {
+                
+                lbWillDelete = false;
+            }
+        }
+        
+        if(lbWillDelete){
+            poJSON.put("result", "error");
+            poJSON.put("message", "No transaction quantity to be save.");
+            return poJSON;
+        }
         
         String lsQuantity = "0.00";
         Iterator<Model> detail = Detail().iterator();
