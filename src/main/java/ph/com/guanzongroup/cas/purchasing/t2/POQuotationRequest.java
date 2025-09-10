@@ -721,7 +721,12 @@ public class POQuotationRequest extends Transaction {
                         object.getModel().getDescription()
                         );
                 if ("error".equals((String) poJSON.get("result"))) {
-                    return poJSON;
+                    if((boolean) poJSON.get("reverse")){
+                        return poJSON;
+                    } else {
+                        row = (int) poJSON.get("row");
+                        Detail(row).isReverse(true);
+                    }
                 }
 
                 Detail(row).setStockId(object.getModel().getStockId());
@@ -748,6 +753,8 @@ public class POQuotationRequest extends Transaction {
             poJSON.put("message", "No record loaded.");
         }
         
+        poJSON.put("result", "success");
+        poJSON.put("message", "success");
         poJSON.put("row", row);
         return poJSON;
     }
@@ -806,6 +813,12 @@ public class POQuotationRequest extends Transaction {
                         if(Detail(lnCtr).isReverse()){
                             poJSON.put("result", "error");
                             poJSON.put("message", "Item Description already exists in the transaction detail at row "+lnRow+".");
+                            poJSON.put("reverse", true);
+                            poJSON.put("row", lnCtr);
+                            return poJSON;
+                        } else {
+                            poJSON.put("result", "error");
+                            poJSON.put("reverse", false);
                             poJSON.put("row", lnCtr);
                             return poJSON;
                         }
@@ -839,6 +852,8 @@ public class POQuotationRequest extends Transaction {
             } 
         }
         
+        poJSON.put("result", "success");
+        poJSON.put("message", "success");
         poJSON.put("row", row);
         return poJSON;
     }
@@ -1284,16 +1299,23 @@ public class POQuotationRequest extends Transaction {
         
         Master().setModifyingId(poGRider.Encrypt(poGRider.getUserID()));
         Master().setModifiedDate(poGRider.getServerDate());
-
+        
+        String lsQuantity = "0.00";
         Iterator<Model> detail = Detail().iterator();
         while (detail.hasNext()) {
             Model item = detail.next();
-            if ((item.getValue("sDescript") == null || "".equals(item.getValue("sDescript")))
-                  &&  (item.getValue("sStockIDx") == null || "".equals(item.getValue("sStockIDx")))) {
-                detail.remove();
+            if(item.getValue("nQuantity") != null && !"".equals(item.getValue("nQuantity"))){
+                lsQuantity = item.getValue("nQuantity").toString();
+            }
+            if (((item.getValue("sDescript") == null || "".equals(item.getValue("sDescript")))
+                  &&  (item.getValue("sStockIDx") == null || "".equals(item.getValue("sStockIDx"))))
+                  || (Double.valueOf(lsQuantity) <= 0.00)) {
 
-                if (item.getEditMode() == EditMode.UPDATE) {
+                if (item.getEditMode() == EditMode.ADDNEW) {
+                    detail.remove();
+                } else {
                     paDetailRemoved.add(item);
+                    item.setValue("cReversex", "0");
                 }
 
             }
