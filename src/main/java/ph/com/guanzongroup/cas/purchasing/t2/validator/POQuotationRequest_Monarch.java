@@ -137,14 +137,14 @@ public class POQuotationRequest_Monarch implements GValidator{
             poJSON.put("message", "Department is not set.");
             return poJSON;
         }
-//        if (poMaster.getPrepared()== null || "".equals(poMaster.getPrepared())) {
-//            poJSON.put("message", "Prepared by is not set.");
-//            return poJSON;
-//        }
-//        if (poMaster.getModifyingId()== null || "".equals(poMaster.getModifyingId())) {
-//            poJSON.put("message", "Modified by is not set.");
-//            return poJSON;
-//        }
+        if (poMaster.getPrepared()== null || "".equals(poMaster.getPrepared())) {
+            poJSON.put("message", "Prepared by is not set.");
+            return poJSON;
+        }
+        if (poMaster.getModifyingId()== null || "".equals(poMaster.getModifyingId())) {
+            poJSON.put("message", "Modified by is not set.");
+            return poJSON;
+        }
         if (poMaster.getTransactionStatus()== null || "".equals(poMaster.getTransactionStatus())) {
             poJSON.put("message", "Transaction Status is not set.");
             return poJSON;

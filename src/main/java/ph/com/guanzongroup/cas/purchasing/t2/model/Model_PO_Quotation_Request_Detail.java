@@ -103,15 +103,15 @@ public class Model_PO_Quotation_Request_Detail extends Model {
         return (int) getValue("nEntryNox");
     }
 
-    public JSONObject setQuantity(int quantity) {
+    public JSONObject setQuantity(Double quantity) {
         return setValue("nQuantity", quantity);
     }
 
-    public int getQuantity() {
+    public Double getQuantity() {
         if (getValue("nQuantity") == null || "".equals(getValue("nQuantity"))) {
-            return 0;
+            return 0.00;
         }
-        return (int) getValue("nQuantity");
+        return Double.valueOf(getValue("nQuantity").toString());
     }
 
     public JSONObject setStockId(String stockId) {

@@ -430,11 +430,6 @@ public class POQuotationRequest extends Transaction {
         String lsSQL = MiscUtil.addCondition(SQL_BROWSE, " a.sIndstCdx = " + SQLUtil.toSQL(psIndustryId)
                                             + " AND a.sCategrCd = " + SQLUtil.toSQL(psCategorCd)
                                             + " AND a.sBranchCd = " + SQLUtil.toSQL(poGRider.getBranchCode()));
-        //If current user is an ordinary user load only its inquiries
-        if (poGRider.getUserLevel() <= UserRight.ENCODER) {
-            lsSQL = MiscUtil.addCondition(lsSQL, 
-                    " a.sSalesman = " + SQLUtil.toSQL(poGRider.getUserID()));
-        }
         
         if (lsTransStat != null && !"".equals(lsTransStat)) {
             lsSQL = lsSQL + lsTransStat;
@@ -444,10 +439,10 @@ public class POQuotationRequest extends Transaction {
         poJSON = ShowDialogFX.Browse(poGRider,
                 lsSQL,
                 "",
-                "Transaction Date»Transaction No»Client»Sales Person",
-                "dTransact»sTransNox»sClientNm»sSalePrsn",
-                "a.dTransact»a.sTransNox»b.sCompnyNm»concat(c.sLastName,', ',c.sFrstName, ' ',c.sMiddName)",
-                1);
+                "Transaction Date»Transaction No»Branch»Department»Category",
+                "dTransact»sTransNox»Branch»Department»Category2", 
+                "a.dTransact»a.sTransNox»c.sBranchNm»d.sDeptName»f.sDescript", 
+                0);
 
         if (poJSON != null) {
             return OpenTransaction((String) poJSON.get("sTransNox"));
@@ -799,7 +794,7 @@ public class POQuotationRequest extends Transaction {
         if(description == null){
             description = "";
         }
-        int lnRow = 1;
+        int lnRow = 0;
         for (int lnCtr = 0; lnCtr <= getDetailCount()- 1; lnCtr++) {
             if(Detail(lnCtr).isReverse()){
                 lnRow++;
@@ -943,24 +938,42 @@ public class POQuotationRequest extends Transaction {
     
     
     public void ReloadDetail() throws CloneNotSupportedException{
+        String lsBrandId = "";
+        String lsModelId = "";
         int lnCtr = getDetailCount() - 1;
         while (lnCtr >= 0) {
+            System.out.println("Brand : " + Detail(lnCtr).getBrandId());
+            System.out.println("Model : " + Detail(lnCtr).getModelId());
+            System.out.println("Description : " + Detail(lnCtr).getDescription());
             if ((Detail(lnCtr).getStockId() == null || "".equals(Detail(lnCtr).getStockId()))
                     && (Detail(lnCtr).getDescription()== null || "".equals(Detail(lnCtr).getDescription()))) {
+                
+                if (Detail(lnCtr).getBrandId() != null
+                    && !"".equals(Detail(lnCtr).getBrandId())) {
+                    lsBrandId = Detail(lnCtr).getBrandId();
+                }
+                
+                if (Detail(lnCtr).getModelId()!= null
+                    && !"".equals(Detail(lnCtr).getModelId())) {
+                    lsModelId = Detail(lnCtr).getModelId();
+                }
                 
                 if(Detail(lnCtr).getEditMode() == EditMode.ADDNEW){
                     deleteDetail(lnCtr); 
                     //Detail().remove(lnCtr);
-                } else {
-                    Detail(lnCtr).isReverse(false);
-                    removeDetail(Detail(lnCtr));
                 }
+//                else if (Detail(lnCtr).getEditMode() == EditMode.UPDATE) {
+//                    Detail(lnCtr).isReverse(false);
+//                    removeDetail(Detail(lnCtr));
+//                }
             }
             lnCtr--;
         }
 
         if ((getDetailCount() - 1) >= 0) {
-            if ((Detail(getDetailCount() - 1).getStockId() != null
+            if (
+                !Detail(getDetailCount() - 1).isReverse() &&
+                (Detail(getDetailCount() - 1).getStockId() != null
                     && !"".equals(Detail(getDetailCount() - 1).getStockId()))
                 || (Detail(getDetailCount() - 1).getDescription()!= null
                     && !"".equals(Detail(getDetailCount() - 1).getDescription()))) {
@@ -970,6 +983,14 @@ public class POQuotationRequest extends Transaction {
 
         if ((getDetailCount() - 1) < 0) {
             AddDetail();
+        }
+        
+        //Set brand Id to last row
+        if (!lsBrandId.isEmpty()) {
+            Detail(getDetailCount() - 1).setBrandId(lsBrandId);
+        }
+        if (!lsModelId.isEmpty()) {
+            Detail(getDetailCount() - 1).setModelId(lsModelId);
         }
     }
     
@@ -1256,7 +1277,8 @@ public class POQuotationRequest extends Transaction {
         if(Master().getEditMode() == EditMode.ADDNEW){
             System.out.println("Will Save : " + Master().getNextCode());
             Master().setTransactionNo(Master().getNextCode());
-            Master().setPrepared(poGRider.Encrypt(poGRider.getUserID()));
+//            Master().setPrepared(poGRider.Encrypt(poGRider.getUserID()));
+            Master().setPrepared(poGRider.getUserID());
             Master().setPreparedDate(poGRider.getServerDate());
         }
         
