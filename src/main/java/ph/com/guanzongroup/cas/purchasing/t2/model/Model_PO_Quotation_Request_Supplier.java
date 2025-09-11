@@ -286,7 +286,7 @@ public class Model_PO_Quotation_Request_Supplier extends Model {
         }
     }
     
-    public Model_Client_Address ClientAddress() throws SQLException, GuanzonException {
+    public Model_Client_Address Address() throws SQLException, GuanzonException {
         if (!"".equals((String) getValue("sSupplier"))) {
             if (poSupplierAddress.getEditMode() == EditMode.READY
                     && poSupplierAddress.getClientId().equals((String) getValue("sSupplier"))) {
@@ -307,7 +307,7 @@ public class Model_PO_Quotation_Request_Supplier extends Model {
         }
     }
     
-    public Model_Client_Mobile ClientMobile() throws SQLException, GuanzonException {
+    public Model_Client_Mobile Contact() throws SQLException, GuanzonException {
         if (!"".equals((String) getValue("sContctID"))) {
             if (poSupplierMobile.getEditMode() == EditMode.READY
                     && poSupplierMobile.getClientId().equals((String) getValue("sContctID"))) {

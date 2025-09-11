@@ -29,6 +29,7 @@ import javax.swing.SwingUtilities;
 import javax.swing.WindowConstants;
 import net.sf.jasperreports.engine.JRException;
 import net.sf.jasperreports.engine.JasperCompileManager;
+import net.sf.jasperreports.engine.JasperExportManager;
 import net.sf.jasperreports.engine.JasperFillManager;
 import net.sf.jasperreports.engine.JasperPrint;
 import net.sf.jasperreports.engine.JasperPrintManager;
@@ -1592,9 +1593,121 @@ public class POQuotationRequest extends Transaction {
         return poJSON;
     }
     
-    private JSONObject exportFile(int POQuotationRequestSupplierRow){
+    public JSONObject exportFile(){
         poJSON = new JSONObject();
-    
+        //retreiving using column index
+        for (int lnCtr = 0; lnCtr <= getPOQuotationRequestSupplierCount() - 1; lnCtr++) {
+            System.out.println("Row No ->> " + lnCtr);
+            System.out.println("----------------------------------------------------------------------------------");
+            System.out.println("-----------------------------------EXPORT-------------------------------------");
+            poJSON = exportFile(lnCtr);
+            if ("error".equals((String) poJSON.get("result"))) {
+                return poJSON;
+            }   
+        }
+        
+        poJSON.put("result", "success");
+        return poJSON;
+    }
+    public JSONObject exportFile(int POQuotationRequestSupplierRow){
+        poJSON = new JSONObject();
+//        psTransactionNo = Master().getTransactionNo();
+        
+        String lsExportPath = "";
+        String lsReportPath = "";
+        String lsWaterMarkPath = "";
+        if (System.getProperty("os.name").toLowerCase().contains("win")) {
+            lsExportPath = "D:/temp/export";
+            lsReportPath = "D:\\GGC_Maven_Systems\\Reports\\POQuotationRequest.jrxml";
+            lsWaterMarkPath = "D:\\GGC_Maven_Systems\\Reports\\images\\draft.png";
+        } else {
+            lsExportPath = "/srv/temp/export";
+            lsReportPath = "srv\\GGC_Maven_Systems\\Reports\\POQuotationRequest.jrxml";
+            lsWaterMarkPath = "srv\\GGC_Maven_Systems\\Reports\\images\\draft.png";
+        }
+        try {
+            
+            //Reopen Transaction to get the accurate data
+//            poJSON = OpenTransaction(psTransactionNo);
+//            if ("error".equals((String) poJSON.get("result"))) {
+//                System.out.println("Print Record open transaction : " + (String) poJSON.get("message"));
+//                return poJSON;
+//            }
+            
+            // 1. Prepare parameters
+            Map<String, Object> parameters = new HashMap<>();
+            parameters.put("sTransNox", Master().getTransactionNo());
+            parameters.put("dTransDte", new java.sql.Date(Master().getTransactionDate().getTime()));
+            parameters.put("sRemarks", Master().getRemarks());
+            parameters.put("sSupplierNm", POQuotationRequestSupplierList(POQuotationRequestSupplierRow).Supplier().getCompanyName()); 
+            parameters.put("sSupplierAddress", POQuotationRequestSupplierList(POQuotationRequestSupplierRow).Address().getAddress()); 
+            parameters.put("sContactNo", POQuotationRequestSupplierList(POQuotationRequestSupplierRow).Contact().getMobileNo()); 
+            
+            parameters.put("sBranchNm", Master().Branch().getBranchName());
+            parameters.put("sAddressx", Master().Branch().getAddress());
+            parameters.put("sCompnyNm", POQuotationRequestSupplierList(POQuotationRequestSupplierRow).Company().getCompanyName());
+            parameters.put("dDatexxx", new java.sql.Date(poGRider.getServerDate().getTime()));
+
+            // Set watermark based on approval status
+            switch (Master().getTransactionStatus()) {
+                case POQuotationRequestStatus.APPROVED:
+                case POQuotationRequestStatus.POSTED:
+                    if (System.getProperty("os.name").toLowerCase().contains("win")) {
+                        lsWaterMarkPath = "D:\\GGC_Maven_Systems\\Reports\\images\\approved.png";
+                    } else {
+                        lsWaterMarkPath = "srv\\GGC_Maven_Systems\\Reports\\images\\approved.png";
+                    }
+                    break;
+            }
+
+            parameters.put("watermarkImagePath", lsWaterMarkPath);
+            List<OrderDetail> orderDetails = new ArrayList<>();
+            
+            int lnRow = 1;
+            String lsDescription = "";
+            for (int lnCtr = 0; lnCtr <= getDetailCount() - 1; lnCtr++) {
+                
+                if(Detail(lnCtr).isReverse()){
+                    lsDescription = Detail(lnCtr).getDescription();
+                    orderDetails.add(new OrderDetail(lnRow, lsDescription, Detail(lnCtr).getQuantity()));
+                    lnRow++;
+                }
+                lsDescription = "";
+            }
+            
+            File file = new File(lsReportPath);
+            if (file.exists()) {
+            } else {
+                poJSON.put("result", "error");
+                poJSON.put("message", "Jasper file does not exist. \nEnsure the file is located in \"D:\\GGC_Maven_Systems\\reports\"");
+                return poJSON;
+            }
+
+            // 3. Create data source
+            JRBeanCollectionDataSource dataSource = new JRBeanCollectionDataSource(orderDetails);
+
+            // 4. Compile and fill report
+            JasperReport jasperReport = JasperCompileManager.compileReport(lsReportPath);
+            JasperPrint jasperPrint = JasperFillManager.fillReport(
+                    jasperReport,
+                    parameters,
+                    dataSource
+            );
+            
+            String lsExportFile = lsExportPath + "/" + psTransactionNo + " - "+ POQuotationRequestSupplierList(POQuotationRequestSupplierRow).Supplier().getCompanyName() + ".pdf";
+            JasperExportManager.exportReportToPdfFile(jasperPrint, lsExportFile);
+            
+        } catch (JRException e) {
+            System.err.println("Error generating report: " + e.getMessage());
+            e.printStackTrace();
+            poJSON.put("result", "error");
+            poJSON.put("message", MiscUtil.getException(e));
+        } catch (SQLException | GuanzonException ex) {
+            Logger.getLogger(getClass().getName()).log(Level.SEVERE, MiscUtil.getException(ex), ex);
+            poJSON.put("result", "error");
+            poJSON.put("message", MiscUtil.getException(ex));
+        }
+        
         return poJSON;
     }
     

@@ -16,6 +16,7 @@ import org.json.simple.parser.ParseException;
 import org.junit.Assert;
 import org.junit.BeforeClass;
 import org.junit.FixMethodOrder;
+import org.junit.Test;
 import org.junit.runners.MethodSorters;
 import ph.com.guanzongroup.cas.purchasing.t2.POQuotationRequest;
 import ph.com.guanzongroup.cas.purchasing.t2.services.QuotationControllers;
@@ -313,5 +314,73 @@ public class testPOQuotationRequest {
             Logger.getLogger(getClass().getName()).log(Level.SEVERE, null, ex);
         }
     }   
+    
+    @Test
+    public void testExportTransaction() {
+        JSONObject loJSON;
+        
+        try {
+            loJSON = poController.InitTransaction();
+            if (!"success".equals((String) loJSON.get("result"))){
+                System.err.println((String) loJSON.get("message"));
+                Assert.fail();
+            } 
+
+            loJSON = poController.OpenTransaction("A00125000002");
+            if (!"success".equals((String) loJSON.get("result"))){
+                System.err.println((String) loJSON.get("message"));
+                Assert.fail();
+            } 
+
+            //retreiving using column index
+            for (int lnCol = 1; lnCol <= poController.Master().getColumnCount(); lnCol++){
+                System.out.println(poController.Master().getColumn(lnCol) + " ->> " + poController.Master().getValue(lnCol));
+            }
+            //retreiving using field descriptions
+            System.out.println(poController.Master().Branch().getBranchName());
+            System.out.println(poController.Master().Industry().getDescription());
+
+            //retreiving using column index
+            for (int lnCtr = 0; lnCtr <= poController.Detail().size() - 1; lnCtr++){
+                for (int lnCol = 1; lnCol <= poController.Detail(lnCtr).getColumnCount(); lnCol++){
+                    System.out.println(poController.Detail(lnCtr).getColumn(lnCol) + " ->> " + poController.Detail(lnCtr).getValue(lnCol));
+                }
+                System.out.println("Brand Description " +  poController.Detail(lnCtr).Brand().getDescription());
+                System.out.println("Model Description " +  poController.Detail(lnCtr).Model().getDescription());
+            }
+           
+            loJSON = poController.loadPOQuotationRequestSupplierList();
+            if (!"success".equals((String) loJSON.get("result"))) {
+                System.err.println((String) loJSON.get("message"));
+                Assert.fail();
+            }
+            
+            //retreiving using column index
+            for (int lnCtr = 0; lnCtr <= poController.getPOQuotationRequestSupplierCount() - 1; lnCtr++) {
+                try {
+                    System.out.println("Row No ->> " + lnCtr);
+                    System.out.println("Transaction No ->> " + poController.POQuotationRequestSupplierList(lnCtr).getTransactionNo());
+                    System.out.println("Company ->> " + poController.POQuotationRequestSupplierList(lnCtr).Company().getCompanyName());
+                    System.out.println("Supplier ->> " + poController.POQuotationRequestSupplierList(lnCtr).Supplier().getCompanyName());
+                    System.out.println("Term ->> " + poController.POQuotationRequestSupplierList(lnCtr).Term().getDescription());
+                    System.out.println("----------------------------------------------------------------------------------");
+                    System.out.println("-----------------------------------EXPORT-------------------------------------");
+                    poController.exportFile(lnCtr);
+                    
+                } catch (SQLException | GuanzonException ex) {
+                    Logger.getLogger(getClass().getName()).log(Level.SEVERE, null, ex);
+                }
+            }
+            
+            
+        } catch (CloneNotSupportedException e) {
+            System.err.println(MiscUtil.getException(e));
+            Assert.fail();
+        } catch (SQLException | GuanzonException ex) {
+            Logger.getLogger(getClass().getName()).log(Level.SEVERE, null, ex);
+        }
+        
+        
+    }      
     
 }
