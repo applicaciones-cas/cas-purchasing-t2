@@ -33,6 +33,7 @@ import org.guanzon.cas.inv.services.InvControllers;
 import org.guanzon.cas.parameter.Branch;
 import org.guanzon.cas.parameter.Brand;
 import org.guanzon.cas.parameter.CategoryLevel2;
+import org.guanzon.cas.parameter.Company;
 import org.guanzon.cas.parameter.Department;
 import org.guanzon.cas.parameter.ModelVariant;
 import org.guanzon.cas.parameter.Term;
@@ -526,6 +527,18 @@ public class POQuotationRequest extends Transaction {
         }
     }
     
+    public JSONObject SearchCompany(String value, boolean byCode, int row) throws ExceptionInInitializerError, SQLException, GuanzonException {
+        Company object = new ParamControllers(poGRider, logwrapr).Company();
+        object.setRecordStatus(RecordStatus.ACTIVE);
+
+        poJSON = object.searchRecord(value, byCode);
+
+        if ("success".equals((String) poJSON.get("result"))) {
+            POQuotationRequestSupplierList(row).setCompanyId(object.getModel().getCompanyId());
+        }
+        return poJSON;
+    }
+    
     public JSONObject SearchDestination(String value, boolean byCode) throws ExceptionInInitializerError, SQLException, GuanzonException {
         Branch object = new ParamControllers(poGRider, logwrapr).Branch();
         object.setRecordStatus(RecordStatus.ACTIVE);
@@ -545,7 +558,7 @@ public class POQuotationRequest extends Transaction {
         poJSON = object.searchRecord(value, byCode);
         if ("success".equals((String) poJSON.get("result"))) {
             if(isSearch){
-                setSearchBranch(object.getModel().getDescription());
+                setSearchBranch(object.getModel().getBranchName());
             } else {
                 Master().setBranchCode(object.getModel().getBranchCode());
             }
@@ -818,8 +831,8 @@ public class POQuotationRequest extends Transaction {
     
     /*Validate*/
     public JSONObject checkExistingDetail(int row, String stockId, String description, boolean isSearch){
-        poJSON = new JSONObject();
-        poJSON.put("row", row);
+        JSONObject loJSON = new JSONObject();
+        loJSON.put("row", row);
         if(stockId == null){
             stockId = "";
         }
@@ -837,25 +850,25 @@ public class POQuotationRequest extends Transaction {
                     if((stockId.equals(Detail(lnCtr).getStockId())  && isSearch )
                             || (description.equals(Detail(lnCtr).getDescription()))){
                         if(Detail(lnCtr).isReverse()){
-                            poJSON.put("result", "error");
-                            poJSON.put("message", "Item Description already exists in the transaction detail at row "+lnRow+".");
-                            poJSON.put("reverse", true);
-                            poJSON.put("row", lnCtr);
-                            return poJSON;
+                            loJSON.put("result", "error");
+                            loJSON.put("message", "Item Description already exists in the transaction detail at row "+lnRow+".");
+                            loJSON.put("reverse", true);
+                            loJSON.put("row", lnCtr);
+                            return loJSON;
                         } else {
-                            poJSON.put("result", "error");
-                            poJSON.put("reverse", false);
-                            poJSON.put("row", lnCtr);
-                            return poJSON;
+                            loJSON.put("result", "error");
+                            loJSON.put("reverse", false);
+                            loJSON.put("row", lnCtr);
+                            return loJSON;
                         }
                     }
                 }    
             }
         }
         
-        poJSON.put("result", "success");
-        poJSON.put("message", "success");
-        return poJSON;
+        loJSON.put("result", "success");
+        loJSON.put("message", "success");
+        return loJSON;
     }
     
     private JSONObject checkExistingSupplier(int row, String supplierId){
@@ -1466,6 +1479,7 @@ public class POQuotationRequest extends Transaction {
             Master().setBranchCode(poGRider.getBranchCode());
             Master().setIndustryId(psIndustryId);
             Master().setCategoryCode(psCategorCd);
+            Master().setDepartmentId(poGRider.getDepartment());
             Master().setTransactionDate(poGRider.getServerDate());
             Master().setTransactionStatus(POQuotationRequestStatus.OPEN);
             
