@@ -229,69 +229,6 @@ public class POQuotationRequest extends Transaction {
         return poJSON;
     }
     
-    public JSONObject DisApproveTransaction(String remarks)
-            throws ParseException,
-            SQLException,
-            GuanzonException,
-            CloneNotSupportedException {
-        poJSON = new JSONObject();
-
-        String lsStatus = POQuotationRequestStatus.DISAPPROVED;
-        boolean lbDisApprove = true;
-
-        if (getEditMode() != EditMode.READY) {
-            poJSON.put("result", "error");
-            poJSON.put("message", "No transacton was loaded.");
-            return poJSON;
-        }
-
-        if (lsStatus.equals((String) poMaster.getValue("cTranStat"))) {
-            poJSON.put("result", "error");
-            poJSON.put("message", "Transaction was already dis-approved.");
-            return poJSON;
-        }
-
-        //validator
-        poJSON = isEntryOkay(POQuotationRequestStatus.DISAPPROVED);
-        if (!"success".equals((String) poJSON.get("result"))) {
-            return poJSON;
-        }
-
-        if (POQuotationRequestStatus.CONFIRMED.equals(Master().getTransactionStatus())) {
-            if (poGRider.getUserLevel() <= UserRight.ENCODER) {
-                poJSON = ShowDialogFX.getUserApproval(poGRider);
-                if (!"success".equals((String) poJSON.get("result"))) {
-                    return poJSON;
-                } else {
-                    if(Integer.parseInt(poJSON.get("nUserLevl").toString())<= UserRight.ENCODER){
-                        poJSON.put("result", "error");
-                        poJSON.put("message", "User is not an authorized approving officer.");
-                        return poJSON;
-                    }
-                }
-            }
-        }
-        
-        //change status
-        poJSON = statusChange(poMaster.getTable(), (String) poMaster.getValue("sTransNox"), remarks, lsStatus, !lbDisApprove);
-        if (!"success".equals((String) poJSON.get("result"))) {
-            return poJSON;
-        }
-        
-        //Update Process
-        
-
-        poJSON = new JSONObject();
-        poJSON.put("result", "success");
-        if (lbDisApprove) {
-            poJSON.put("message", "Transaction dis-approved successfully.");
-        } else {
-            poJSON.put("message", "Transaction dis-approving request submitted successfully.");
-        }
-
-        return poJSON;
-    }
-    
     public JSONObject PostTransaction(String remarks)
             throws ParseException,
             SQLException,
