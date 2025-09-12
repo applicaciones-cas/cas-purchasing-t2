@@ -433,6 +433,66 @@ public class POQuotationRequest extends Transaction {
         return poJSON;
     }
     
+    public JSONObject DisApprovedTransaction(String remarks)
+            throws ParseException,
+            SQLException,
+            GuanzonException,
+            CloneNotSupportedException {
+        poJSON = new JSONObject();
+
+        String lsStatus = POQuotationRequestStatus.CANCELLED;
+        boolean lbCancel = true;
+
+        if (getEditMode() != EditMode.READY) {
+            poJSON.put("result", "error");
+            poJSON.put("message", "No transacton was loaded.");
+            return poJSON;
+        }
+
+        if (lsStatus.equals((String) poMaster.getValue("cTranStat"))) {
+            poJSON.put("result", "error");
+            poJSON.put("message", "Transaction was already dis-approved.");
+            return poJSON;
+        }
+
+        //validator
+        poJSON = isEntryOkay(POQuotationRequestStatus.CANCELLED);
+        if (!"success".equals((String) poJSON.get("result"))) {
+            return poJSON;
+        }
+
+        if (POQuotationRequestStatus.CONFIRMED.equals(Master().getTransactionStatus())) {
+            if (poGRider.getUserLevel() <= UserRight.ENCODER) {
+                poJSON = ShowDialogFX.getUserApproval(poGRider);
+                if (!"success".equals((String) poJSON.get("result"))) {
+                    return poJSON;
+                } else {
+                    if(Integer.parseInt(poJSON.get("nUserLevl").toString())<= UserRight.ENCODER){
+                        poJSON.put("result", "error");
+                        poJSON.put("message", "User is not an authorized approving officer.");
+                        return poJSON;
+                    }
+                }
+            }
+        }
+        
+        //change status
+        poJSON = statusChange(poMaster.getTable(), (String) poMaster.getValue("sTransNox"), remarks, lsStatus, !lbCancel);
+        if (!"success".equals((String) poJSON.get("result"))) {
+            return poJSON;
+        }
+
+        poJSON = new JSONObject();
+        poJSON.put("result", "success");
+        if (lbCancel) {
+            poJSON.put("message", "Transaction dis-approved successfully.");
+        } else {
+            poJSON.put("message", "Transaction dis-approving request submitted successfully.");
+        }
+
+        return poJSON;
+    }
+    
     /*Search References*/
     public JSONObject searchTransaction()
             throws CloneNotSupportedException,
@@ -549,20 +609,6 @@ public class POQuotationRequest extends Transaction {
             poJSON.put("message", "No record loaded.");
             return poJSON;
         }
-    }
-    
-    public JSONObject SearchCompany(String value, boolean byCode, int row) throws ExceptionInInitializerError, SQLException, GuanzonException {
-        Company object = new ParamControllers(poGRider, logwrapr).Company();
-        object.setRecordStatus(RecordStatus.ACTIVE);
-
-        poJSON = object.searchRecord(value, byCode);
-
-        if ("success".equals((String) poJSON.get("result"))) {
-            POQuotationRequestSupplierList(row).setCompanyId(object.getModel().getCompanyId());
-        }
-        System.out.println("Company ID : " + POQuotationRequestSupplierList(row).Company().getCompanyId());
-        System.out.println("Company : " + POQuotationRequestSupplierList(row).Company().getCompanyName());
-        return poJSON;
     }
     
     public JSONObject SearchDestination(String value, boolean byCode) throws ExceptionInInitializerError, SQLException, GuanzonException {
@@ -828,22 +874,54 @@ public class POQuotationRequest extends Transaction {
         object.Master().setRecordStatus(RecordStatus.ACTIVE);
         object.Master().setClientType("1");
         poJSON = object.Master().searchRecord(value, byCode);
-
         if ("success".equals((String) poJSON.get("result"))) {
-            poJSON = checkExistingSupplier(row,object.Master().getModel().getClientId());
-            if ("error".equals((String) poJSON.get("result"))) {
-                return poJSON;
+            JSONObject loJSON = checkExistingSupplier(row,
+                    object.Master().getModel().getClientId(),
+                    POQuotationRequestSupplierList(row).getCompanyId()
+                    );
+            if ("error".equals((String) loJSON.get("result"))) {
+                if((boolean) loJSON.get("reverse")){
+                    return loJSON;
+                } else {
+                    //reset the current row
+                    if( POQuotationRequestSupplierList(row).getEditMode() == EditMode.ADDNEW){
+                        POQuotationRequestSupplierList(row).setSupplierId("");
+                        POQuotationRequestSupplierList(row).setAddressId("");
+                        POQuotationRequestSupplierList(row).setContactId("");
+                        POQuotationRequestSupplierList(row).setCompanyId("");
+                    }
+                    
+                    //reverse into true the result row
+                    row = (int) loJSON.get("row");
+                    POQuotationRequestSupplierList(row).isReverse(true);
+                }
             }
+            
             POQuotationRequestSupplierList(row).setSupplierId(object.Master().getModel().getClientId());
             POQuotationRequestSupplierList(row).setAddressId(object.ClientAddress().getModel().getAddressId());
             POQuotationRequestSupplierList(row).setContactId(object.ClientInstitutionContact().getModel().getClientId());
+        } else {
+            poJSON = new JSONObject();
+            poJSON.put("result", "error");
+            poJSON.put("message", "No record loaded.");
         }
-        System.out.println("Supplier : " + POQuotationRequestSupplierList(row).Company().getCompanyName());
+        System.out.println("Supplier : " + POQuotationRequestSupplierList(row).Supplier().getCompanyName());
+        
+        poJSON.put("result", "success");
+        poJSON.put("message", "success");
         poJSON.put("row", row);
         return poJSON;
     }
 
     public JSONObject SearchTerm(String value, boolean byCode, int row) throws ExceptionInInitializerError, SQLException, GuanzonException {
+        poJSON = new JSONObject();
+        
+        if(POQuotationRequestSupplierList(row).getSupplierId() == null || "".equals(POQuotationRequestSupplierList(row).getSupplierId())){
+            poJSON.put("result", "error");
+            poJSON.put("message", "Supplier cannot be empty.");
+            return poJSON;
+        }
+        
         Term object = new ParamControllers(poGRider, logwrapr).Term();
         object.setRecordStatus("1");
 
@@ -853,6 +931,52 @@ public class POQuotationRequest extends Transaction {
         }
 
         System.out.println("Term : " + POQuotationRequestSupplierList(row).Term().getTermValue());
+        return poJSON;
+    }
+    
+    public JSONObject SearchCompany(String value, boolean byCode, int row) throws ExceptionInInitializerError, SQLException, GuanzonException {
+        poJSON = new JSONObject();
+        
+        if(POQuotationRequestSupplierList(row).getSupplierId() == null || "".equals(POQuotationRequestSupplierList(row).getSupplierId())){
+            poJSON.put("result", "error");
+            poJSON.put("message", "Supplier cannot be empty.");
+            return poJSON;
+        }
+        
+        Company object = new ParamControllers(poGRider, logwrapr).Company();
+        object.setRecordStatus(RecordStatus.ACTIVE);
+        
+        poJSON = object.searchRecord(value, byCode);
+        if ("success".equals((String) poJSON.get("result"))) {
+            poJSON = checkExistingSupplier(row,
+                    POQuotationRequestSupplierList(row).getSupplierId(),
+                    object.getModel().getCompanyId()
+                    );
+            if ("error".equals((String) poJSON.get("result"))) {
+                if((boolean) poJSON.get("reverse")){
+                    return poJSON;
+                } else {
+                    //reset the current row
+                    if( POQuotationRequestSupplierList(row).getEditMode() == EditMode.ADDNEW){
+                        POQuotationRequestSupplierList(row).setSupplierId("");
+                        POQuotationRequestSupplierList(row).setAddressId("");
+                        POQuotationRequestSupplierList(row).setContactId("");
+                        POQuotationRequestSupplierList(row).setCompanyId("");
+                    }
+                    
+                    //reverse into true the result row
+                    row = (int) poJSON.get("row");
+                    POQuotationRequestSupplierList(row).isReverse(true);
+                }
+            }
+            POQuotationRequestSupplierList(row).setCompanyId(object.getModel().getCompanyId());
+        }
+        System.out.println("Company ID : " + POQuotationRequestSupplierList(row).Company().getCompanyId());
+        System.out.println("Company : " + POQuotationRequestSupplierList(row).Company().getCompanyName());
+        
+        poJSON.put("result", "success");
+        poJSON.put("message", "success");
+        poJSON.put("row", row);
         return poJSON;
     }
     
@@ -898,30 +1022,41 @@ public class POQuotationRequest extends Transaction {
         return loJSON;
     }
     
-    private JSONObject checkExistingSupplier(int row, String supplierId){
-        poJSON.put("row", row);
-        int lnRow = 1;
-        for(int lnCtr = 0; lnRow <= getPOQuotationRequestSupplierCount()- 1; lnRow++){
-            if(Detail(lnCtr).isReverse()){
+    private JSONObject checkExistingSupplier(int row, String supplierId, String compnay){
+        JSONObject loJSON = new JSONObject();
+        int lnRow = 0;
+        for(int lnCtr = 0; lnCtr <= getPOQuotationRequestSupplierCount()- 1; lnCtr++){
+            if(POQuotationRequestSupplierList(lnCtr).isReverse()){
                 lnRow++;
             }
-            if (POQuotationRequestSupplierList(lnCtr).getSupplierId().equals(supplierId)) {
-                if(POQuotationRequestSupplierList(lnCtr).isReverse()){
-                    poJSON.put("result", "error");
-                    poJSON.put("message", "Supplier already exists in the table at row "+lnRow+".");
-                    poJSON.put("row", lnRow);
-                    return poJSON;
-                } else {
-                    POQuotationRequestSupplierList(lnCtr).isReverse(true);
-                    break;
-                }
-            } 
+            if (lnCtr != row) {
+                System.out.println("Row : " + lnCtr);
+                System.out.println("Supplier : " + POQuotationRequestSupplierList(lnCtr).getSupplierId());
+                System.out.println("Company : " + POQuotationRequestSupplierList(lnCtr).getCompanyId());
+                
+                if (POQuotationRequestSupplierList(lnCtr).getSupplierId().equals(supplierId)
+                        && POQuotationRequestSupplierList(lnCtr).getCompanyId().equals(compnay)
+                        ) {
+                    if(POQuotationRequestSupplierList(lnCtr).isReverse()){
+                        loJSON.put("result", "error");
+                        loJSON.put("reverse", true);
+                        loJSON.put("message", "Supplier with the same company already exists in the table at row "+lnRow+".");
+                        loJSON.put("row", lnCtr);
+                        return loJSON;
+                    } else {
+                        loJSON.put("result", "error");
+                        loJSON.put("reverse", false);
+                        loJSON.put("row", lnCtr);
+                        return loJSON;
+                    }
+                } 
+            }
         }
         
-        poJSON.put("result", "success");
-        poJSON.put("message", "success");
-        poJSON.put("row", row);
-        return poJSON;
+        loJSON.put("result", "success");
+        loJSON.put("message", "success");
+        loJSON.put("row", row);
+        return loJSON;
     }
     
     /*Load*/
@@ -1105,14 +1240,11 @@ public class POQuotationRequest extends Transaction {
         } else {
             return;
         }
-        String lsCompanyId = "";
         int lnRow = getPOQuotationRequestSupplierCount() - 1;
         while (lnRow >= 0) {
-            if (paSuppliers.get(lnRow).getSupplierId()== null || "".equals(paSuppliers.get(lnRow).getSupplierId())) {
-                if (paSuppliers.get(lnRow).getCompanyId() != null
-                    && !"".equals(paSuppliers.get(lnRow).getCompanyId())) {
-                    lsCompanyId = paSuppliers.get(lnRow).getCompanyId();
-                }
+            if ((paSuppliers.get(lnRow).getSupplierId() == null || "".equals(paSuppliers.get(lnRow).getSupplierId()))
+                    && (paSuppliers.get(lnRow).getCompanyId() == null || "".equals(paSuppliers.get(lnRow).getCompanyId()))
+                    ) {
                 
                 if(paSuppliers.get(lnRow).getEditMode() == EditMode.ADDNEW){
                     paSuppliers.remove(lnRow);
@@ -1124,18 +1256,15 @@ public class POQuotationRequest extends Transaction {
         }
 
         if ((getPOQuotationRequestSupplierCount()- 1) >= 0) {
-            if (paSuppliers.get(getPOQuotationRequestSupplierCount() - 1).getSupplierId()!= null
-                    && !"".equals(paSuppliers.get(getPOQuotationRequestSupplierCount() - 1).getSupplierId())) {
+            if (paSuppliers.get(getPOQuotationRequestSupplierCount() - 1).getSupplierId()!= null && !"".equals(paSuppliers.get(getPOQuotationRequestSupplierCount() - 1).getSupplierId())
+                && (paSuppliers.get(getPOQuotationRequestSupplierCount() - 1).getCompanyId() != null && !"".equals(paSuppliers.get(getPOQuotationRequestSupplierCount() - 1).getCompanyId()))
+                    ) {
                 AddPOQuotationRequestSupplier();
             }
         }
 
         if ((getPOQuotationRequestSupplierCount() - 1) < 0) {
             AddPOQuotationRequestSupplier();
-        }
-        
-        if (!lsCompanyId.isEmpty()) {
-            paSuppliers.get(getPOQuotationRequestSupplierCount() - 1).setCompanyId(lsCompanyId);
         }
     }
     
@@ -1389,22 +1518,17 @@ public class POQuotationRequest extends Transaction {
         if(Master().getEditMode() == EditMode.ADDNEW){
             System.out.println("Will Save : " + Master().getNextCode());
             Master().setTransactionNo(Master().getNextCode());
-//            Master().setPrepared(poGRider.Encrypt(poGRider.getUserID()));
             Master().setPrepared(poGRider.getUserID());
             Master().setPreparedDate(poGRider.getServerDate());
         }
         
         Master().setModifyingId(poGRider.Encrypt(poGRider.getUserID()));
         Master().setModifiedDate(poGRider.getServerDate());
-        
+       
         //Check detail
         boolean lbWillDelete = true;
         for(int lnCtr = 0; lnCtr <= getDetailCount()-1; lnCtr++){
-            if (
-//                    ((Detail(lnCtr).getDescription() != null && !"".equals(Detail(lnCtr).getDescription()))
-//                  ||  (Detail(lnCtr).getStockId() != null && !"".equals(Detail(lnCtr).getStockId())))
-                   (Detail(lnCtr).getQuantity() > 0.00) && Detail(lnCtr).isReverse() ) {
-                
+            if ((Detail(lnCtr).getQuantity() > 0.00) && Detail(lnCtr).isReverse() ) {
                 lbWillDelete = false;
             }
         }
@@ -1413,6 +1537,31 @@ public class POQuotationRequest extends Transaction {
             poJSON.put("result", "error");
             poJSON.put("message", "No transaction quantity to be save.");
             return poJSON;
+        }
+        
+        //Check Supplier detail
+        int lnRow = 0;
+        for(int lnCtr = 0; lnCtr <= getPOQuotationRequestSupplierCount()-1; lnCtr++){
+            if(POQuotationRequestSupplierList(lnCtr).isReverse()){
+                lnRow++;
+                if (POQuotationRequestSupplierList(lnCtr).getSupplierId() != null 
+                        && !"".equals(POQuotationRequestSupplierList(lnCtr).getSupplierId())) {
+                    
+                    if(POQuotationRequestSupplierList(lnCtr).getTerm()== null 
+                        || "".equals(POQuotationRequestSupplierList(lnCtr).getTerm())){
+                        poJSON.put("result", "error");
+                        poJSON.put("message", "Supplier term at row "+lnRow+" cannot be empty.");
+                        return poJSON;
+                    }
+                    
+                    if(POQuotationRequestSupplierList(lnCtr).getCompanyId() == null 
+                        || "".equals(POQuotationRequestSupplierList(lnCtr).getCompanyId())){
+                        poJSON.put("result", "error");
+                        poJSON.put("message", "Supplier company at row "+lnRow+" cannot be empty.");
+                        return poJSON;
+                    }
+                }
+            }
         }
         
         String lsQuantity = "0.00";
@@ -1595,6 +1744,12 @@ public class POQuotationRequest extends Transaction {
     
     public JSONObject exportFile(){
         poJSON = new JSONObject();
+        
+        if(getPOQuotationRequestSupplierCount() <= 0){
+            poJSON.put("result", "error");
+            poJSON.put("message", "No supplier to be export.");
+            return poJSON;
+        }
         //retreiving using column index
         for (int lnCtr = 0; lnCtr <= getPOQuotationRequestSupplierCount() - 1; lnCtr++) {
             System.out.println("Row No ->> " + lnCtr);
@@ -1607,6 +1762,7 @@ public class POQuotationRequest extends Transaction {
         }
         
         poJSON.put("result", "success");
+        poJSON.put("message", "Export complete.");
         return poJSON;
     }
     public JSONObject exportFile(int POQuotationRequestSupplierRow){
@@ -1694,7 +1850,7 @@ public class POQuotationRequest extends Transaction {
                     dataSource
             );
             
-            String lsExportFile = lsExportPath + "/" + psTransactionNo + " - "+ POQuotationRequestSupplierList(POQuotationRequestSupplierRow).Supplier().getCompanyName() + ".pdf";
+            String lsExportFile = lsExportPath + "/" + Master().getTransactionNo() + " - "+ POQuotationRequestSupplierList(POQuotationRequestSupplierRow).Supplier().getCompanyName() + ".pdf";
             JasperExportManager.exportReportToPdfFile(jasperPrint, lsExportFile);
             
         } catch (JRException e) {
