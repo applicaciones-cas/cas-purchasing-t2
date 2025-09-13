@@ -1772,18 +1772,22 @@ public class POQuotationRequest extends Transaction {
         poJSON = new JSONObject();
 //        psTransactionNo = Master().getTransactionNo();
         
-        String lsExportPath = "";
-        String lsReportPath = "";
-        String lsWaterMarkPath = "";
-        if (System.getProperty("os.name").toLowerCase().contains("win")) {
-            lsExportPath = "D:/temp/export";
-            lsReportPath = "D:\\GGC_Maven_Systems\\Reports\\POQuotationRequest.jrxml";
-            lsWaterMarkPath = "D:\\GGC_Maven_Systems\\Reports\\images\\draft.png";
-        } else {
-            lsExportPath = "/srv/temp/export";
-            lsReportPath = "srv\\GGC_Maven_Systems\\Reports\\POQuotationRequest.jrxml";
-            lsWaterMarkPath = "srv\\GGC_Maven_Systems\\Reports\\images\\draft.png";
-        }
+        String lsExportPath = System.getProperty("sys.default.path.temp") + "/export";
+        String lsReportPath = System.getProperty("sys.default.path.config") + "/Reports/POQuotationRequest.jrxml";
+        String lsWaterMarkPath = System.getProperty("sys.default.path.config") + "/Reports//images/approved.png";
+        
+//        if (System.getProperty("os.name").toLowerCase().contains("win")) {
+////            lsExportPath = "D:/temp/export";
+//            lsWaterMarkPath = "D:/GGC_Maven_Systems/Reports/images/approved.png";
+////            lsReportPath = "D:\\GGC_Maven_Systems\\Reports\\POQuotationRequest.jrxml";
+////            lsWaterMarkPath = "D:\\GGC_Maven_Systems\\Reports\\images\\draft.png";
+//        } else {
+//            lsExportPath = "/srv/temp/export";
+//            lsReportPath = "/srv/GGC_Maven_Systems/Reports/POQuotationRequest.jrxml";
+//            lsWaterMarkPath = "/srv/GGC_Maven_Systems/Reports/images/approved.png";
+////            lsReportPath = "srv\\GGC_Maven_Systems\\Reports\\POQuotationRequest.jrxml";
+////            lsWaterMarkPath = "srv\\GGC_Maven_Systems\\Reports\\images\\draft.png";
+//        }
         try {
             
             // 1. Prepare parameters
@@ -1801,16 +1805,16 @@ public class POQuotationRequest extends Transaction {
             parameters.put("dDatexxx", new java.sql.Date(poGRider.getServerDate().getTime()));
 
             // Set watermark based on approval status
-            switch (Master().getTransactionStatus()) {
-                case POQuotationRequestStatus.APPROVED:
-                case POQuotationRequestStatus.POSTED:
-                    if (System.getProperty("os.name").toLowerCase().contains("win")) {
-                        lsWaterMarkPath = "D:\\GGC_Maven_Systems\\Reports\\images\\approved.png";
-                    } else {
-                        lsWaterMarkPath = "srv\\GGC_Maven_Systems\\Reports\\images\\approved.png";
-                    }
-                    break;
-            }
+//            switch (Master().getTransactionStatus()) {
+//                case POQuotationRequestStatus.APPROVED:
+//                case POQuotationRequestStatus.POSTED:
+//                    if (System.getProperty("os.name").toLowerCase().contains("win")) {
+//                        lsWaterMarkPath = "D:\\GGC_Maven_Systems\\Reports\\images\\approved.png";
+//                    } else {
+//                        lsWaterMarkPath = "srv\\GGC_Maven_Systems\\Reports\\images\\approved.png";
+//                    }
+//                    break;
+//            }
 
             parameters.put("watermarkImagePath", lsWaterMarkPath);
             List<OrderDetail> orderDetails = new ArrayList<>();
