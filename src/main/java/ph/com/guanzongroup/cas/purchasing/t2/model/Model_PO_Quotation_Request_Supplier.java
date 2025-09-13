@@ -56,7 +56,7 @@ public class Model_PO_Quotation_Request_Supplier extends Model {
             //assign default values
             poEntity.updateNull("dModified");
             poEntity.updateObject("nEntryNox", 0);
-            poEntity.updateObject("cReversex", "1");
+            poEntity.updateObject("cReversex", "+");
             poEntity.updateObject("cSendStat", "0");
             //end - assign default values
 
@@ -152,11 +152,11 @@ public class Model_PO_Quotation_Request_Supplier extends Model {
     }
     
     public JSONObject isReverse(boolean isReverse) {
-        return setValue("cReversex", isReverse ? "1" : "0");
+        return setValue("cReversex", isReverse ? "+" : "-");
     }
 
     public boolean isReverse() {
-        return ((String) getValue("cReversex")).equals("1");
+        return ((String) getValue("cReversex")).equals("+");
     }
     
     public JSONObject isSent(boolean sent) {

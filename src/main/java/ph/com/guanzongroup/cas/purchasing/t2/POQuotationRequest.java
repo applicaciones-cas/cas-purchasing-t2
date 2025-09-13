@@ -904,6 +904,7 @@ public class POQuotationRequest extends Transaction {
             poJSON = new JSONObject();
             poJSON.put("result", "error");
             poJSON.put("message", "No record loaded.");
+            poJSON.put("row", row);
         }
         System.out.println("Supplier : " + POQuotationRequestSupplierList(row).Supplier().getCompanyName());
         
@@ -1751,15 +1752,17 @@ public class POQuotationRequest extends Transaction {
             return poJSON;
         }
         //retreiving using column index
+        System.out.println("-----------------------------------EXPORT-------------------------------------");
         for (int lnCtr = 0; lnCtr <= getPOQuotationRequestSupplierCount() - 1; lnCtr++) {
-            System.out.println("Row No ->> " + lnCtr);
-            System.out.println("----------------------------------------------------------------------------------");
-            System.out.println("-----------------------------------EXPORT-------------------------------------");
-            poJSON = exportFile(lnCtr);
-            if ("error".equals((String) poJSON.get("result"))) {
-                return poJSON;
-            }   
+                if(POQuotationRequestSupplierList(lnCtr).isReverse()){
+                System.out.println("Row No ->> " + lnCtr);
+                poJSON = exportFile(lnCtr);
+                if ("error".equals((String) poJSON.get("result"))) {
+                    return poJSON;
+                }   
+            }
         }
+        System.out.println("------------------------------------------------------------------------------");
         
         poJSON.put("result", "success");
         poJSON.put("message", "Export complete.");

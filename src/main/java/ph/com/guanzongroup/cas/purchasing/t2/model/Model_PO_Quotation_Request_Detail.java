@@ -55,7 +55,7 @@ public class Model_PO_Quotation_Request_Detail extends Model {
             poEntity.updateObject("nEntryNox", 0);
             poEntity.updateObject("nQuantity", 0);
             poEntity.updateObject("nUnitPrce", 0.0000);
-            poEntity.updateObject("cReversex", "1");
+            poEntity.updateObject("cReversex", "+");
             //end - assign default values
 
             poEntity.insertRow();
@@ -142,11 +142,11 @@ public class Model_PO_Quotation_Request_Detail extends Model {
     }
     
     public JSONObject isReverse(boolean isReverse) {
-        return setValue("cReversex", isReverse ? "1" : "0");
+        return setValue("cReversex", isReverse ? "+" : "-");
     }
 
     public boolean isReverse() {
-        return ((String) getValue("cReversex")).equals("1");
+        return ((String) getValue("cReversex")).equals("+");
     }
 
     public JSONObject setModifiedDate(Date modifiedDate) {
