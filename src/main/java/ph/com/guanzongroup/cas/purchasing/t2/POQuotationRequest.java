@@ -539,7 +539,7 @@ public class POQuotationRequest extends Transaction {
         }
     }
     
-    public JSONObject searchTransaction(String fsBranch, String fsDepartment, String fsCateogry, String fdTransactionDate,String fsTransactionNo)
+    public JSONObject searchTransaction(String fsBranch, String fsDepartment, String fsCateogry, String fsTransactionDate,String fsTransactionNo)
             throws CloneNotSupportedException,
             SQLException,
             GuanzonException {
@@ -568,8 +568,8 @@ public class POQuotationRequest extends Transaction {
                                                     ? " AND f.sDescript LIKE " + SQLUtil.toSQL("%"+fsCateogry)
                                                     : "";
         
-        String lsTransactionDate = fdTransactionDate != null && !"".equals(fdTransactionDate) && !"1900-01-01".equals(fdTransactionDate) 
-                                                    ? " AND a.dTransact = " + SQLUtil.toSQL(fdTransactionDate)
+        String lsTransactionDate = fsTransactionDate != null && !"".equals(fsTransactionDate) && !"1900-01-01".equals(fsTransactionDate) 
+                                                    ? " AND a.dTransact = " + SQLUtil.toSQL(fsTransactionDate)
                                                     : "";
         
         String lsTransactionNo = fsTransactionNo != null && !"".equals(fsTransactionNo) 
@@ -1783,13 +1783,6 @@ public class POQuotationRequest extends Transaction {
         }
         try {
             
-            //Reopen Transaction to get the accurate data
-//            poJSON = OpenTransaction(psTransactionNo);
-//            if ("error".equals((String) poJSON.get("result"))) {
-//                System.out.println("Print Record open transaction : " + (String) poJSON.get("message"));
-//                return poJSON;
-//            }
-            
             // 1. Prepare parameters
             Map<String, Object> parameters = new HashMap<>();
             parameters.put("sTransNox", Master().getTransactionNo());
@@ -1850,7 +1843,7 @@ public class POQuotationRequest extends Transaction {
                     dataSource
             );
             
-            String lsExportFile = lsExportPath + "/" + Master().getTransactionNo() + " - "+ POQuotationRequestSupplierList(POQuotationRequestSupplierRow).Supplier().getCompanyName() + ".pdf";
+            String lsExportFile = lsExportPath + "/" + Master().getTransactionNo() + " - "+  POQuotationRequestSupplierList(POQuotationRequestSupplierRow).Company().getCompanyName() + " " + POQuotationRequestSupplierList(POQuotationRequestSupplierRow).Supplier().getCompanyName() + ".pdf";
             JasperExportManager.exportReportToPdfFile(jasperPrint, lsExportFile);
             
         } catch (JRException e) {
