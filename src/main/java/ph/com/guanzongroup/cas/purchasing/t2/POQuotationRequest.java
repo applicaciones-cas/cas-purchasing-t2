@@ -773,18 +773,21 @@ public class POQuotationRequest extends Transaction {
             poJSON.put("message", "Category is not set.");
             return poJSON;
         }
+        
         String lsBrand = Detail(row).getBrandId() != null && !"".equals(Detail(row).getBrandId()) 
                                                     ? " AND a.sBrandIDx = " + SQLUtil.toSQL(Detail(row).getBrandId())
                                                     : "";
         String lsModel = Detail(row).getModelId()!= null && !"".equals(Detail(row).getModelId()) 
                                                     ? " AND a.sModelIDx = " + SQLUtil.toSQL(Detail(row).getModelId())
                                                     : "";
+        String lsCategory2 = Master().getCategoryLevel2() != null && !"".equals(Master().getCategoryLevel2()) 
+                                                    ? " AND a.sCategCd2 = " + SQLUtil.toSQL(Master().getCategoryLevel2())
+                                                    : "";
         Inventory object = new InvControllers(poGRider, logwrapr).Inventory();
         String lsSQL = MiscUtil.addCondition(object.getSQ_Browse(), 
                                              //" a.cRecdStat = " + SQLUtil.toSQL(RecordStatus.ACTIVE)
                                             " a.sCategCd1 = " + SQLUtil.toSQL(Master().getCategoryCode())
-//                                            + " AND a.sIndstCdx = " + SQLUtil.toSQL(Master().getIndustryId())
-                                            + " AND a.sCategCd2 = " + SQLUtil.toSQL(Master().getCategoryLevel2())
+                                            + lsCategory2
                                             + lsBrand
                                             + lsModel
                                             );
@@ -1058,6 +1061,17 @@ public class POQuotationRequest extends Transaction {
         loJSON.put("message", "success");
         loJSON.put("row", row);
         return loJSON;
+    }
+    
+    public boolean checkExistStockInventory(){
+        for(int lnCtr = 0; lnCtr <= getDetailCount()-1;lnCtr++){
+            if(Detail(lnCtr).isReverse()){
+                if(Detail(lnCtr).getStockId() != null && !"".equals(Detail(lnCtr).getStockId())){
+                    return true;
+                }
+            }
+        }
+        return false;
     }
     
     /*Load*/
@@ -1402,11 +1416,33 @@ public class POQuotationRequest extends Transaction {
         Iterator<Model> detail = Detail().iterator();
         while (detail.hasNext()) {
             Model item = detail.next();
-            if (item.getEditMode() == EditMode.UPDATE) {
+            if (item.getEditMode() == EditMode.ADDNEW) {
+                detail.remove();
+            } else {
                 paDetailRemoved.add(item);
+                item.setValue("cReversex", "0");
             }
-            
-            detail.remove();
+        }
+
+        poJSON.put("result", "success");
+        poJSON.put("message", "success");
+        return poJSON;
+    }
+    
+    public JSONObject removeWithInvDetails() {
+        poJSON = new JSONObject();
+        Iterator<Model> detail = Detail().iterator();
+        while (detail.hasNext()) {
+            Model item = detail.next();
+            //Only remove the detail with stock id to not be conflict in category level 2 of transaction vs inventory information
+            if(item.getValue("sStockIDx") != null && !"".equals(item.getValue("sStockIDx"))){
+                if (item.getEditMode() == EditMode.ADDNEW) {
+                    detail.remove();
+                } else {
+                    paDetailRemoved.add(item);
+                    item.setValue("cReversex", "0");
+                }
+            }
         }
 
         poJSON.put("result", "success");
@@ -1770,24 +1806,9 @@ public class POQuotationRequest extends Transaction {
     }
     public JSONObject exportFile(int POQuotationRequestSupplierRow){
         poJSON = new JSONObject();
-//        psTransactionNo = Master().getTransactionNo();
-        
         String lsExportPath = System.getProperty("sys.default.path.temp") + "/export";
         String lsReportPath = System.getProperty("sys.default.path.config") + "/Reports/POQuotationRequest.jrxml";
         String lsWaterMarkPath = System.getProperty("sys.default.path.config") + "/Reports//images/approved.png";
-        
-//        if (System.getProperty("os.name").toLowerCase().contains("win")) {
-////            lsExportPath = "D:/temp/export";
-//            lsWaterMarkPath = "D:/GGC_Maven_Systems/Reports/images/approved.png";
-////            lsReportPath = "D:\\GGC_Maven_Systems\\Reports\\POQuotationRequest.jrxml";
-////            lsWaterMarkPath = "D:\\GGC_Maven_Systems\\Reports\\images\\draft.png";
-//        } else {
-//            lsExportPath = "/srv/temp/export";
-//            lsReportPath = "/srv/GGC_Maven_Systems/Reports/POQuotationRequest.jrxml";
-//            lsWaterMarkPath = "/srv/GGC_Maven_Systems/Reports/images/approved.png";
-////            lsReportPath = "srv\\GGC_Maven_Systems\\Reports\\POQuotationRequest.jrxml";
-////            lsWaterMarkPath = "srv\\GGC_Maven_Systems\\Reports\\images\\draft.png";
-//        }
         try {
             
             // 1. Prepare parameters
@@ -1803,26 +1824,12 @@ public class POQuotationRequest extends Transaction {
             parameters.put("sAddressx", Master().Branch().getAddress());
             parameters.put("sCompnyNm", POQuotationRequestSupplierList(POQuotationRequestSupplierRow).Company().getCompanyName());
             parameters.put("dDatexxx", new java.sql.Date(poGRider.getServerDate().getTime()));
-
-            // Set watermark based on approval status
-//            switch (Master().getTransactionStatus()) {
-//                case POQuotationRequestStatus.APPROVED:
-//                case POQuotationRequestStatus.POSTED:
-//                    if (System.getProperty("os.name").toLowerCase().contains("win")) {
-//                        lsWaterMarkPath = "D:\\GGC_Maven_Systems\\Reports\\images\\approved.png";
-//                    } else {
-//                        lsWaterMarkPath = "srv\\GGC_Maven_Systems\\Reports\\images\\approved.png";
-//                    }
-//                    break;
-//            }
-
             parameters.put("watermarkImagePath", lsWaterMarkPath);
             List<OrderDetail> orderDetails = new ArrayList<>();
             
             int lnRow = 1;
             String lsDescription = "";
             for (int lnCtr = 0; lnCtr <= getDetailCount() - 1; lnCtr++) {
-                
                 if(Detail(lnCtr).isReverse()){
                     lsDescription = Detail(lnCtr).getDescription();
                     orderDetails.add(new OrderDetail(lnRow, lsDescription, Detail(lnCtr).getQuantity()));
@@ -1835,7 +1842,7 @@ public class POQuotationRequest extends Transaction {
             if (file.exists()) {
             } else {
                 poJSON.put("result", "error");
-                poJSON.put("message", "Jasper file does not exist. \nEnsure the file is located in \"D:\\GGC_Maven_Systems\\reports\"");
+                poJSON.put("message", "Jasper file does not exist. \nEnsure the file is located in \""+System.getProperty("sys.default.path.config")+"\"Reports");
                 return poJSON;
             }
 
@@ -1867,6 +1874,32 @@ public class POQuotationRequest extends Transaction {
         return poJSON;
     }
     
+    public static class OrderDetail {
+
+        private Integer nRowNo;
+        private String sDescription;
+        private double nOrder;
+
+        public OrderDetail(Integer rowNo, String description, double order) {
+            this.nRowNo = rowNo;
+            this.sDescription = description;
+            this.nOrder = order;
+        }
+
+        public Integer getnRowNo() {
+            return nRowNo;
+        }
+
+        public String getsDescription() {
+            return sDescription;
+        }
+
+        public double getnOrder() {
+            return nOrder;
+        }
+    }
+    
+    /*
     //Print Transaction
     private CustomJasperViewer poViewer = null;
     private String psTransactionNo = "";
@@ -1980,31 +2013,6 @@ public class POQuotationRequest extends Transaction {
         }
 
         return poJSON;
-    }
-
-    public static class OrderDetail {
-
-        private Integer nRowNo;
-        private String sDescription;
-        private double nOrder;
-
-        public OrderDetail(Integer rowNo, String description, double order) {
-            this.nRowNo = rowNo;
-            this.sDescription = description;
-            this.nOrder = order;
-        }
-
-        public Integer getnRowNo() {
-            return nRowNo;
-        }
-
-        public String getsDescription() {
-            return sDescription;
-        }
-
-        public double getnOrder() {
-            return nOrder;
-        }
     }
 
     private class CustomJasperViewer extends JasperViewer {
@@ -2158,7 +2166,7 @@ public class POQuotationRequest extends Transaction {
             return null;
         }
     }
-    
+    */
     
     
 }
