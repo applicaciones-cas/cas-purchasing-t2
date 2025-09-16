@@ -1095,6 +1095,11 @@ public class POQuotationRequest extends Transaction {
             String lsTransactionNo = fsTransactionNo != null && !"".equals(fsTransactionNo) 
                                                         ? " AND a.sTransNox LIKE " + SQLUtil.toSQL("%"+fsTransactionNo)
                                                         : "";
+            
+            String lsApproval = "";
+            if(isApproval){
+                lsApproval = " AND a.sTransNox NOT IN (SELECT q.sSourceNo FROM po_quotation_master q WHERE q.sSourceNo = a.sTransNox ) ";
+            }
 
             String lsTransStat = "";
             if (psTranStat != null) {
@@ -1117,6 +1122,10 @@ public class POQuotationRequest extends Transaction {
                     + lsTransactionDate
                     + lsTransactionNo
             );
+            
+            if (lsApproval != null && !"".equals(lsApproval)) {
+                lsSQL = lsSQL + lsApproval;
+            }
             
             if (lsTransStat != null && !"".equals(lsTransStat)) {
                 lsSQL = lsSQL + lsTransStat;
