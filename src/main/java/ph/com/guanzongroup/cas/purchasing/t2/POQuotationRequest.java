@@ -1073,7 +1073,7 @@ public class POQuotationRequest extends Transaction {
     }
     
     /*Load*/
-    public JSONObject loadPOQuotationRequestList(String fsBranch, String fsDepartment, String fsCateogry, Date fdTransactionDate, String fsTransactionNo) {
+    public JSONObject loadPOQuotationRequestList(String fsBranch, String fsDepartment, String fsCateogry, Date fdTransactionDate, String fsTransactionNo, boolean isApproval) {
         try {
             
             String lsBranch = fsBranch != null && !"".equals(fsBranch) 
