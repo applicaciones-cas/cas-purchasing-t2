@@ -183,7 +183,7 @@ public class testPOQuotationRequest {
         poController.setIndustryId(industryId);
         poController.setCategoryId(categoryCode);
         poController.setTransactionStatus(POQuotationRequestStatus.CONFIRMED+POQuotationRequestStatus.OPEN);
-        loJSON = poController.loadPOQuotationRequestList(branch,department,category2,lDate,lsTransNo);
+        loJSON = poController.loadPOQuotationRequestList(branch,department,category2,lDate,lsTransNo, true);
         if (!"success".equals((String) loJSON.get("result"))) {
             System.err.println((String) loJSON.get("message"));
             Assert.fail();
