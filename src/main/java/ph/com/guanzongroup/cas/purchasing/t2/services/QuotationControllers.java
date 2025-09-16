@@ -7,7 +7,7 @@ package ph.com.guanzongroup.cas.purchasing.t2.services;
 
 import org.guanzon.appdriver.base.GRiderCAS;
 import org.guanzon.appdriver.base.LogWrapper;
-//import ph.com.guanzongroup.cas.purchasing.t2.POQuotation;
+import ph.com.guanzongroup.cas.purchasing.t2.POQuotation;
 import ph.com.guanzongroup.cas.purchasing.t2.POQuotationRequest;
 
 /**
@@ -38,22 +38,22 @@ public class QuotationControllers {
         return POQuotationRequest;        
     }
     
-//    public POQuotation POQuotation(){
-//        if (poGRider == null){
-//            poLogWrapper.severe("QuotationControllers.POQuotation: Application driver is not set.");
-//            return null;
-//        }
-//        
-//        if (POQuotation != null) return POQuotation;
-//        
-//        POQuotation = new POQuotation();
-//        POQuotation.setApplicationDriver(poGRider);
-//        POQuotation.setBranchCode(poGRider.getBranchCode());
-//        POQuotation.setVerifyEntryNo(true);
-//        POQuotation.setWithParent(false);
-//        POQuotation.setLogWrapper(poLogWrapper);
-//        return POQuotation;        
-//    }
+    public POQuotation POQuotation(){
+        if (poGRider == null){
+            poLogWrapper.severe("QuotationControllers.POQuotation: Application driver is not set.");
+            return null;
+        }
+        
+        if (POQuotation != null) return POQuotation;
+        
+        POQuotation = new POQuotation();
+        POQuotation.setApplicationDriver(poGRider);
+        POQuotation.setBranchCode(poGRider.getBranchCode());
+        POQuotation.setVerifyEntryNo(true);
+        POQuotation.setWithParent(false);
+        POQuotation.setLogWrapper(poLogWrapper);
+        return POQuotation;        
+    }
     
     @Override
     protected void finalize() throws Throwable {
@@ -70,5 +70,5 @@ public class QuotationControllers {
     private GRiderCAS poGRider;
     private LogWrapper poLogWrapper;
     private POQuotationRequest POQuotationRequest;
-//    private POQuotation POQuotation;
+    private POQuotation POQuotation;
 }
