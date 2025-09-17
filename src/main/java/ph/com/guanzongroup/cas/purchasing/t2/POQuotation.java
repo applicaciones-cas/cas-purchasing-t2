@@ -496,18 +496,22 @@ public class POQuotation extends Transaction {
         if (poJSON != null) {
             poJSON = object.getModel().openRecord((String) poJSON.get("sStockIDx"));
             if ("success".equals((String) poJSON.get("result"))) {
-                poJSON = checkExistingDetail(row,
+                JSONObject loJSON = checkExistingDetail(row,
                         object.getModel().getStockId(),
-                        object.getModel().getDescription()
+                        object.getModel().getDescription(),
+                        true
                         );
-                if ("error".equals((String) poJSON.get("result"))) {
-                    return poJSON;
+                if ("error".equals((String) loJSON.get("result"))) {
+                    if((boolean) loJSON.get("reverse")){
+                        return loJSON;
+                    } else {
+                        row = (int) loJSON.get("row");
+                        Detail(row).isReverse(true);
+                    }
                 }
 
-                Detail(row).setStockId(object.getModel().getStockId());
-                Detail(row).setDescription(object.getModel().getDescription());
-                Detail(row).setBrandId(object.getModel().getBrandId());
-                Detail(row).setModelId(object.getModel().getModelId());
+                Detail(row).setReplaceId(object.getModel().getStockId());
+                Detail(row).setReplaceDescription(object.getModel().getDescription());
                    
 //                if(object.getModel().Variant().getSellingPrice() != 0.0000){  //Error TODO
 //                    Detail(row).setSellPrice(object.getModel().Variant().getSellingPrice());
@@ -531,6 +535,27 @@ public class POQuotation extends Transaction {
             poJSON.put("result", "error");
             poJSON.put("message", "No record loaded.");
         }
+        if ("error".equals((String) poJSON.get("result"))) {
+            if(!"".equals(value)){
+                poJSON = checkExistingDetail(row,
+                        "",
+                        value,
+                        false
+                        );
+                if ("error".equals((String) poJSON.get("result"))) {
+                    if((boolean) poJSON.get("reverse")){
+                        return poJSON;
+                    } else {
+                        row = (int) poJSON.get("row");
+                        Detail(row).isReverse(true);
+                    }
+                }
+            }
+
+            Detail(row).setReplaceId("");
+            Detail(row).setReplaceDescription(value);
+        }
+        
         
         poJSON.put("row", row);
         return poJSON;
@@ -647,9 +672,9 @@ public class POQuotation extends Transaction {
     }
     
     /*Validate*/
-    public JSONObject checkExistingDetail(int row, String stockId, String description){
-        poJSON = new JSONObject();
-        poJSON.put("row", row);
+    public JSONObject checkExistingDetail(int row, String stockId, String description, boolean isSearch){
+        JSONObject loJSON = new JSONObject();
+        loJSON.put("row", row);
         if(stockId == null){
             stockId = "";
         }
@@ -664,21 +689,31 @@ public class POQuotation extends Transaction {
             if (lnCtr != row) {
                 //Check Existing Stock ID and Description
                 if(!"".equals(stockId) || !"".equals(description)){
-                    if(stockId.equals(Detail(lnCtr).getStockId()) || description.equals(Detail(lnCtr).getDescription())){
+                    if(((stockId.equals(Detail(lnCtr).getStockId())   && isSearch )
+                        || description.equals(Detail(lnCtr).getDescription()))
+                            || ((stockId.equals(Detail(lnCtr).getReplaceId()) && isSearch )
+                            || description.equals(Detail(lnCtr).getReplaceDescription()))
+                            ){
                         if(Detail(lnCtr).isReverse()){
-                            poJSON.put("result", "error");
-                            poJSON.put("message", "Item Description already exists in the transaction detail at row "+lnRow+".");
-                            poJSON.put("row", lnCtr);
-                            return poJSON;
+                            loJSON.put("result", "error");
+                            loJSON.put("message", "Item Description already exists in the transaction detail at row "+lnRow+".");
+                            loJSON.put("reverse", true);
+                            loJSON.put("row", lnCtr);
+                            return loJSON;
+                        } else {
+                            loJSON.put("result", "error");
+                            loJSON.put("reverse", false);
+                            loJSON.put("row", lnCtr);
+                            return loJSON;
                         }
                     }
                 }    
             }
         }
         
-        poJSON.put("result", "success");
-        poJSON.put("message", "success");
-        return poJSON;
+        loJSON.put("result", "success");
+        loJSON.put("message", "success");
+        return loJSON;
     }
     
     public JSONObject computeFields()
@@ -687,12 +722,20 @@ public class POQuotation extends Transaction {
         poJSON = new JSONObject();
 
         //Compute Transaction Total
-        Double ldblTotal = 0.00;
+        Double ldblTotal = 0.0000;
         Double ldblDiscount = Master().getAdditionalDiscountAmount();
         Double ldblDiscountRate = Master().getDiscountRate();
+        Double ldblDetailDiscount = 0.0000;
+        Double ldblDetailDiscountRate = 0.00;
+        Double ldblDetailTotal = 0.0000;
         
         for (int lnCtr = 0; lnCtr <= getDetailCount() - 1; lnCtr++) {
+            ldblDetailTotal = 
+            
+            
             ldblTotal += (Detail(lnCtr).getUnitPrice() * Detail(lnCtr).getQuantity());
+            
+            ldblDetailTotal = 0.0000;
         }
         poJSON = Master().setTransactionTotal(ldblTotal); //Sum of purchase amount
         if(ldblDiscountRate > 0){
@@ -924,7 +967,7 @@ public class POQuotation extends Transaction {
         return poJSON;
     }
     
-    public JSONObject loadPOQuotationRequestSupplierList(String company, String branch, String department, String supplier, String category2, String sourceNo) {
+    public JSONObject loadPOQuotationRequestSupplierList(String company, String branch, String department, String supplier, String category2) {
         try {
             if (company == null) {
                 company = "";
@@ -941,10 +984,6 @@ public class POQuotation extends Transaction {
             if (category2 == null) {
                 category2 = "";
             }
-            if (sourceNo == null) {
-                sourceNo = "";
-            }
-            
             String lsSQL = MiscUtil.addCondition(getSupplierSQL(), 
                       " b.sIndstCdx = " + SQLUtil.toSQL(psIndustryId)
                     + " AND b.sCategrCd = " + SQLUtil.toSQL(psCategorCd)
@@ -953,7 +992,6 @@ public class POQuotation extends Transaction {
                     + " AND e.sDeptName LIKE " + SQLUtil.toSQL("%" + department) 
                     + " AND h.sCompnyNm LIKE " + SQLUtil.toSQL("%" + supplier) 
                     + " AND g.sDescript LIKE " + SQLUtil.toSQL("%" + category2) 
-                    + " AND a.sTransNox LIKE " + SQLUtil.toSQL("%" + sourceNo)
                     + " AND b.cTranStat = " + SQLUtil.toSQL(POQuotationRequestStatus.APPROVED)
             );
 
@@ -1018,6 +1056,7 @@ public class POQuotation extends Transaction {
             Master().setTerm(POQuotationRequestSupplierList(row).getTerm());
             Master().setSourceNo(POQuotationRequestSupplierList(row).getTransactionNo());
             Master().setSourceCode(object.getSourceCode());
+            Master().setCompanyId(POQuotationRequestSupplierList(row).getCompanyId());
             Master().setBranchCode(object.Master().getBranchCode());
             Master().setCategoryCode(object.Master().getCategoryLevel2());
             
@@ -1042,36 +1081,36 @@ public class POQuotation extends Transaction {
         return poJSON;
     }
     
-    public void ReloadDetail() throws CloneNotSupportedException{
-        int lnCtr = getDetailCount() - 1;
-        while (lnCtr >= 0) {
-            if ((Detail(lnCtr).getStockId() == null || "".equals(Detail(lnCtr).getStockId()))
-                    && (Detail(lnCtr).getDescription()== null || "".equals(Detail(lnCtr).getDescription()))) {
-                
-                if(Detail(lnCtr).getEditMode() == EditMode.ADDNEW){
-                    deleteDetail(lnCtr); 
-                    //Detail().remove(lnCtr);
-                } else {
-                    Detail(lnCtr).isReverse(false);
-                    removeDetail(Detail(lnCtr));
-                }
-            }
-            lnCtr--;
-        }
-
-        if ((getDetailCount() - 1) >= 0) {
-            if ((Detail(getDetailCount() - 1).getStockId() != null
-                    && !"".equals(Detail(getDetailCount() - 1).getStockId()))
-                || (Detail(getDetailCount() - 1).getDescription()!= null
-                    && !"".equals(Detail(getDetailCount() - 1).getDescription()))) {
-                AddDetail();
-            }
-        }
-
-        if ((getDetailCount() - 1) < 0) {
-            AddDetail();
-        }
-    }
+//    public void ReloadDetail() throws CloneNotSupportedException{
+//        int lnCtr = getDetailCount() - 1;
+//        while (lnCtr >= 0) {
+//            if ((Detail(lnCtr).getStockId() == null || "".equals(Detail(lnCtr).getStockId()))
+//                    && (Detail(lnCtr).getDescription()== null || "".equals(Detail(lnCtr).getDescription()))) {
+//                
+//                if(Detail(lnCtr).getEditMode() == EditMode.ADDNEW){
+//                    deleteDetail(lnCtr); 
+//                    //Detail().remove(lnCtr);
+//                } else {
+//                    Detail(lnCtr).isReverse(false);
+//                    removeDetail(Detail(lnCtr));
+//                }
+//            }
+//            lnCtr--;
+//        }
+//
+//        if ((getDetailCount() - 1) >= 0) {
+//            if ((Detail(getDetailCount() - 1).getStockId() != null
+//                    && !"".equals(Detail(getDetailCount() - 1).getStockId()))
+//                || (Detail(getDetailCount() - 1).getDescription()!= null
+//                    && !"".equals(Detail(getDetailCount() - 1).getDescription()))) {
+//                AddDetail();
+//            }
+//        }
+//
+//        if ((getDetailCount() - 1) < 0) {
+//            AddDetail();
+//        }
+//    }
     
     private Model_PO_Quotation_Master POQuotationMaster() {
         return new QuotationModels(poGRider).POQuotationMaster();

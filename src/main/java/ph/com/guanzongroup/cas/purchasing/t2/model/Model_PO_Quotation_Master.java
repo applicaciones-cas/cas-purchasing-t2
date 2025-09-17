@@ -23,6 +23,7 @@ import org.guanzon.cas.parameter.model.Model_Industry;
 import org.guanzon.cas.parameter.model.Model_Term;
 import org.guanzon.cas.parameter.services.ParamModels;
 import org.json.simple.JSONObject;
+import ph.com.guanzongroup.cas.purchasing.t2.services.QuotationModels;
 import ph.com.guanzongroup.cas.purchasing.t2.status.POQuotationStatus;
 
 /**
@@ -40,6 +41,8 @@ public class Model_PO_Quotation_Master extends Model {
     Model_Client_Master poSupplier;
     Model_Client_Address poSupplierAddress;
     Model_Client_Mobile poSupplierMobile;
+    
+    Model_PO_Quotation_Request_Master poQuotationRequest;
     
     @Override
     public void initialize() {
@@ -92,6 +95,9 @@ public class Model_PO_Quotation_Master extends Model {
             poSupplier = clientModel.ClientMaster();
             poSupplierAddress = clientModel.ClientAddress();
             poSupplierMobile = clientModel.ClientMobile();
+            
+            QuotationModels quotationModel = new QuotationModels(poGRider);
+            poQuotationRequest = quotationModel.POQuotationRequestMaster();
 //            end - initialize reference objects
 
             pnEditMode = EditMode.UNKNOWN;
@@ -568,6 +574,27 @@ public class Model_PO_Quotation_Master extends Model {
         } else {
             poSupplierMobile.initialize();
             return poSupplierMobile;
+        }
+    }
+    
+    public Model_PO_Quotation_Request_Master POQuotationRequest() throws SQLException, GuanzonException {
+        if (!"".equals((String) getValue("sSourceNo"))) {
+            if (poQuotationRequest.getEditMode() == EditMode.READY
+                    && poQuotationRequest.getIndustryId().equals((String) getValue("sSourceNo"))) {
+                return poQuotationRequest;
+            } else {
+                poJSON = poQuotationRequest.openRecord((String) getValue("sSourceNo"));
+
+                if ("success".equals((String) poJSON.get("result"))) {
+                    return poQuotationRequest;
+                } else {
+                    poQuotationRequest.initialize();
+                    return poQuotationRequest;
+                }
+            }
+        } else {
+            poQuotationRequest.initialize();
+            return poQuotationRequest;
         }
     }
     //end reference object models
