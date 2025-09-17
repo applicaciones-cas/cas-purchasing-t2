@@ -1066,6 +1066,11 @@ public class POQuotation extends Transaction {
             Master().setCompanyId(POQuotationRequestSupplierList(row).getCompanyId());
             Master().setBranchCode(object.Master().getBranchCode());
             Master().setCategoryCode(object.Master().getCategoryLevel2());
+            Master().setValidityDate(object.Master().getExpectedPurchaseDate());
+            
+            if(getDetailCount() < 1){
+                AddDetail();
+            }
             
             for(int lnCtr = 0; lnCtr <= object.getDetailCount()-1; lnCtr++){
                 if(object.Detail(lnCtr).isReverse()){
