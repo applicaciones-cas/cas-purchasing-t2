@@ -370,28 +370,24 @@ public class POQuotation extends Transaction {
         }
 
         initSQL();
-        String lsSQL = MiscUtil.addCondition(SQL_BROWSE, " a.sIndstCdx = " + SQLUtil.toSQL(psIndustryId)
-                                            + " AND a.sCategrCd = " + SQLUtil.toSQL(psCategorCd)
-                                            + " AND a.sBranchCd = " + SQLUtil.toSQL(poGRider.getBranchCode()));
-        //If current user is an ordinary user load only its inquiries
-        if (poGRider.getUserLevel() <= UserRight.ENCODER) {
-            lsSQL = MiscUtil.addCondition(lsSQL, 
-                    " a.sSalesman = " + SQLUtil.toSQL(poGRider.getUserID()));
-        }
+        String lsSQL = MiscUtil.addCondition(SQL_BROWSE, 
+                   " a.sIndstCdx = " + SQLUtil.toSQL(psIndustryId)
+                 + " AND a.sCategrCd = " + SQLUtil.toSQL(psCategorCd)
+                );
         
         if (lsTransStat != null && !"".equals(lsTransStat)) {
             lsSQL = lsSQL + lsTransStat;
         }
-
+        
         System.out.println("Executing SQL: " + lsSQL);
         poJSON = ShowDialogFX.Browse(poGRider,
                 lsSQL,
                 "",
-                "Transaction Date»Transaction No»Client»Sales Person",
-                "dTransact»sTransNox»sClientNm»sSalePrsn",
-                "a.dTransact»a.sTransNox»b.sCompnyNm»concat(c.sLastName,', ',c.sFrstName, ' ',c.sMiddName)",
+                "Transaction Date»Transaction No»Supplier»Branch»Department»Category",
+                "dTransact»sTransNox»SpplierNm»Branch»Department»Category2", 
+                "a.dTransact»a.sTransNox»i.sCompnyNm»c.sBranchNm»h.sDeptName»f.sDescript", 
                 1);
-
+        
         if (poJSON != null) {
             return OpenTransaction((String) poJSON.get("sTransNox"));
         } else {
@@ -459,8 +455,8 @@ public class POQuotation extends Transaction {
                 lsSQL,
                 "",
                 "Transaction Date»Transaction No»Supplier»Branch»Department»Category",
-                "dTransact»sTransNox»Supplier»Branch»Department»Category", // TODO
-                "a.dTransact»a.sTransNox»Supplier»Branch»Department»Category", //TODO
+                "dTransact»sTransNox»SpplierNm»Branch»Department»Category2", 
+                "a.dTransact»a.sTransNox»i.sCompnyNm»c.sBranchNm»h.sDeptName»f.sDescript", 
                 1);
 
         if (poJSON != null) {
@@ -526,9 +522,6 @@ public class POQuotation extends Transaction {
             
             System.out.println("Barcode : " + Detail(row).Inventory().getBarCode());
             System.out.println("Description : " + Detail(row).Inventory().getDescription());
-            System.out.println("Category : " + Master().Category2().getDescription());
-            System.out.println("Brand : " + Detail(row).Brand().getDescription());
-            System.out.println("Model : " + Detail(row).Model().getDescription());
             
         } else {
             poJSON = new JSONObject();
@@ -601,14 +594,18 @@ public class POQuotation extends Transaction {
         return poJSON;
     }
 
-    public JSONObject SearchSupplier(String value, boolean byCode) throws ExceptionInInitializerError, SQLException, GuanzonException {
+    public JSONObject SearchSupplier(String value, boolean byCode, boolean isSearch) throws ExceptionInInitializerError, SQLException, GuanzonException {
         Client object = new ClientControllers(poGRider, logwrapr).Client();
         object.Master().setRecordStatus(RecordStatus.ACTIVE);
         object.Master().setClientType("1");
 
         poJSON = object.Master().searchRecord(value, byCode);
         if ("success".equals((String) poJSON.get("result"))) {
-            Master().setSupplierId(object.Master().getModel().getClientId());
+            if(isSearch){
+                setSearchSupplier(object.Master().getModel().getCompanyName());
+            } else {
+                Master().setSupplierId(object.Master().getModel().getClientId());
+            }
         }
 
         return poJSON;
@@ -1568,7 +1565,7 @@ public class POQuotation extends Transaction {
                     + "   , a.sCompnyID  "
                     + "   , b.sDescript AS Industry      "
                     + "   , c.sBranchNm AS Branch        "
-                    + "   , e.sDescript AS Category      "
+                    + "   , f.sDescript AS Category2     "
                     + "   , h.sDeptName AS Department    "
                     + "   , i.sCompnyNm AS SpplierNm  "
                     + "  FROM po_quotation_master a      "

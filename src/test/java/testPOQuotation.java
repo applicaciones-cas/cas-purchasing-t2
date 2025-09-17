@@ -252,7 +252,6 @@ public class testPOQuotation {
                 System.out.println("Transaction No ->> " + poController.POQuotationList(lnCtr).getTransactionNo());
                 System.out.println("Transaction Date ->> " + poController.POQuotationList(lnCtr).getTransactionDate());
                 System.out.println("Branch ->> " + poController.POQuotationList(lnCtr).Branch().getBranchName());
-                System.out.println("Category ->> " + poController.POQuotationList(lnCtr).Category2().getDescription());
                 System.out.println("----------------------------------------------------------------------------------");
             } catch (SQLException | GuanzonException ex) {
                 Logger.getLogger(getClass().getName()).log(Level.SEVERE, null, ex);

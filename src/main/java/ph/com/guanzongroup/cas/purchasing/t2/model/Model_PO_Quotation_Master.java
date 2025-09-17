@@ -493,28 +493,7 @@ public class Model_PO_Quotation_Master extends Model {
         }
     }
     
-    public Model_Category_Level2 Category2() throws GuanzonException, SQLException {
-        if (!"".equals((String) getValue("sCategrCd"))) {
-            if (poCategory.getEditMode() == EditMode.READY
-                    && poCategory.getCategoryId().equals((String) getValue("sCategrCd"))) {
-                return poCategory;
-            } else {
-                poJSON = poCategory.openRecord((String) getValue("sCategrCd"));
-
-                if ("success".equals((String) poJSON.get("result"))) {
-                    return poCategory;
-                } else {
-                    poCategory.initialize();
-                    return poCategory;
-                }
-            }
-        } else {
-            poCategory.initialize();
-            return poCategory;
-        }
-    }
-    
-    public Model_Client_Master Client() throws SQLException, GuanzonException {
+    public Model_Client_Master Supplier() throws SQLException, GuanzonException {
         if (!"".equals((String) getValue("sClientID"))) {
             if (poSupplier.getEditMode() == EditMode.READY
                     && poSupplier.getClientId().equals((String) getValue("sClientID"))) {
@@ -535,7 +514,7 @@ public class Model_PO_Quotation_Master extends Model {
         }
     }
     
-    public Model_Client_Address ClientAddress() throws SQLException, GuanzonException {
+    public Model_Client_Address Address() throws SQLException, GuanzonException {
         if (!"".equals((String) getValue("sClientID"))) {
             if (poSupplierAddress.getEditMode() == EditMode.READY
                     && poSupplierAddress.getClientId().equals((String) getValue("sClientID"))) {
@@ -556,7 +535,7 @@ public class Model_PO_Quotation_Master extends Model {
         }
     }
     
-    public Model_Client_Mobile ClientMobile() throws SQLException, GuanzonException {
+    public Model_Client_Mobile Contact() throws SQLException, GuanzonException {
         if (!"".equals((String) getValue("sContctID"))) {
             if (poSupplierMobile.getEditMode() == EditMode.READY
                     && poSupplierMobile.getClientId().equals((String) getValue("sContctID"))) {
