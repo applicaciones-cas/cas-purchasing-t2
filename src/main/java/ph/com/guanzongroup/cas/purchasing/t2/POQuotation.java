@@ -35,6 +35,7 @@ import org.guanzon.cas.inv.Inventory;
 import org.guanzon.cas.inv.services.InvControllers;
 import org.guanzon.cas.parameter.Branch;
 import org.guanzon.cas.parameter.CategoryLevel2;
+import org.guanzon.cas.parameter.Company;
 import org.guanzon.cas.parameter.Department;
 import org.guanzon.cas.parameter.Term;
 import org.guanzon.cas.parameter.services.ParamControllers;
@@ -535,6 +536,18 @@ public class POQuotation extends Transaction {
         return poJSON;
     }
     
+    public JSONObject SearchCompany(String value, boolean byCode) throws ExceptionInInitializerError, SQLException, GuanzonException {
+        Company object = new ParamControllers(poGRider, logwrapr).Company();
+        object.setRecordStatus(RecordStatus.ACTIVE);
+
+        poJSON = object.searchRecord(value, byCode);
+        if ("success".equals((String) poJSON.get("result"))) {
+            Master().setCompanyId(object.getModel().getCompanyId());
+        }
+
+        return poJSON;
+    }
+    
     public JSONObject SearchBranch(String value, boolean byCode, boolean isSearch) throws ExceptionInInitializerError, SQLException, GuanzonException {
         Branch object = new ParamControllers(poGRider, logwrapr).Branch();
         object.setRecordStatus(RecordStatus.ACTIVE);
@@ -911,8 +924,11 @@ public class POQuotation extends Transaction {
         return poJSON;
     }
     
-    public JSONObject loadPOQuotationRequestSupplierList(String branch, String department, String supplier, String category2, String sourceNo) {
+    public JSONObject loadPOQuotationRequestSupplierList(String company, String branch, String department, String supplier, String category2, String sourceNo) {
         try {
+            if (company == null) {
+                company = "";
+            }
             if (branch == null) {
                 branch = "";
             }
@@ -932,7 +948,7 @@ public class POQuotation extends Transaction {
             String lsSQL = MiscUtil.addCondition(getSupplierSQL(), 
                       " b.sIndstCdx = " + SQLUtil.toSQL(psIndustryId)
                     + " AND b.sCategrCd = " + SQLUtil.toSQL(psCategorCd)
-                    + " AND a.sCompnyID = " + SQLUtil.toSQL(psCompanyId)
+                    + " AND a.sCompnyID LIKE " + SQLUtil.toSQL("%" + company)
                     + " AND d.sBranchNm LIKE " + SQLUtil.toSQL("%" + branch)
                     + " AND e.sDeptName LIKE " + SQLUtil.toSQL("%" + department) 
                     + " AND h.sCompnyNm LIKE " + SQLUtil.toSQL("%" + supplier) 
