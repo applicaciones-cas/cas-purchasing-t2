@@ -1094,7 +1094,7 @@ public class POQuotation extends Transaction {
         while (lnCtr >= 0) {
             if (((Detail(lnCtr).getStockId() == null || "".equals(Detail(lnCtr).getStockId()))
                     && (Detail(lnCtr).getDescription()== null || "".equals(Detail(lnCtr).getDescription())))
-                || ((Detail(lnCtr).getReplaceId()== null || "".equals(Detail(lnCtr).getReplaceId()))
+                && ((Detail(lnCtr).getReplaceId()== null || "".equals(Detail(lnCtr).getReplaceId()))
                     && (Detail(lnCtr).getReplaceDescription()== null || "".equals(Detail(lnCtr).getReplaceDescription())))){
                 
                 if(Detail(lnCtr).getEditMode() == EditMode.ADDNEW){
@@ -1110,7 +1110,7 @@ public class POQuotation extends Transaction {
                     && !"".equals(Detail(getDetailCount() - 1).getStockId()))
                 || (Detail(getDetailCount() - 1).getDescription()!= null
                     && !"".equals(Detail(getDetailCount() - 1).getDescription()))) 
-                || ((Detail(getDetailCount() - 1).getReplaceId()!= null
+                && ((Detail(getDetailCount() - 1).getReplaceId()!= null
                     && !"".equals(Detail(getDetailCount() - 1).getReplaceId()))
                 || (Detail(getDetailCount() - 1).getReplaceDescription()!= null
                     && !"".equals(Detail(getDetailCount() - 1).getReplaceDescription())))){
