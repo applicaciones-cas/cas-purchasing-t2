@@ -9,6 +9,7 @@ import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.text.SimpleDateFormat;
 import java.time.LocalDate;
+import java.time.ZoneId;
 import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
 import java.util.Date;
@@ -25,10 +26,16 @@ import org.guanzon.appdriver.base.GuanzonException;
 import org.guanzon.appdriver.base.MiscUtil;
 import org.guanzon.appdriver.base.SQLUtil;
 import org.guanzon.appdriver.constant.EditMode;
+import org.guanzon.appdriver.constant.RecordStatus;
 import org.guanzon.appdriver.constant.UserRight;
 import org.guanzon.appdriver.iface.GValidator;
+import org.guanzon.cas.client.Client;
+import org.guanzon.cas.client.services.ClientControllers;
 import org.guanzon.cas.inv.Inventory;
 import org.guanzon.cas.inv.services.InvControllers;
+import org.guanzon.cas.parameter.Branch;
+import org.guanzon.cas.parameter.CategoryLevel2;
+import org.guanzon.cas.parameter.Department;
 import org.guanzon.cas.parameter.Term;
 import org.guanzon.cas.parameter.services.ParamControllers;
 import org.json.simple.JSONObject;
@@ -527,7 +534,93 @@ public class POQuotation extends Transaction {
         poJSON.put("row", row);
         return poJSON;
     }
+    
+    public JSONObject SearchBranch(String value, boolean byCode, boolean isSearch) throws ExceptionInInitializerError, SQLException, GuanzonException {
+        Branch object = new ParamControllers(poGRider, logwrapr).Branch();
+        object.setRecordStatus(RecordStatus.ACTIVE);
 
+        poJSON = object.searchRecord(value, byCode);
+        if ("success".equals((String) poJSON.get("result"))) {
+            if(isSearch){
+                setSearchBranch(object.getModel().getBranchName());
+            } else {
+                Master().setBranchCode(object.getModel().getBranchCode());
+            }
+        }
+
+        return poJSON;
+    }
+    
+    public JSONObject SearchDepartment(String value, boolean byCode) throws ExceptionInInitializerError, SQLException, GuanzonException {
+        Department object = new ParamControllers(poGRider, logwrapr).Department();
+        object.setRecordStatus(RecordStatus.ACTIVE);
+
+        poJSON = object.searchRecord(value, byCode);
+
+        if ("success".equals((String) poJSON.get("result"))) {
+            setSearchDepartment(object.getModel().getDescription());
+        }
+        return poJSON;
+    }
+
+    public JSONObject SearchSupplier(String value, boolean byCode) throws ExceptionInInitializerError, SQLException, GuanzonException {
+        Client object = new ClientControllers(poGRider, logwrapr).Client();
+        object.Master().setRecordStatus(RecordStatus.ACTIVE);
+        object.Master().setClientType("1");
+
+        poJSON = object.Master().searchRecord(value, byCode);
+        if ("success".equals((String) poJSON.get("result"))) {
+            Master().setSupplierId(object.Master().getModel().getClientId());
+        }
+
+        return poJSON;
+    }
+    
+    public JSONObject SearchCategory(String value, boolean byCode) throws SQLException, GuanzonException {
+        poJSON = new JSONObject();
+        
+//        CategoryLevel2 object = new ParamControllers(poGRider, logwrapr).CategoryLevel2();
+//        object.setRecordStatus(RecordStatus.ACTIVE);
+//
+//        poJSON = object.searchRecord(value, byCode);
+//        if ("success".equals((String) poJSON.get("result"))) {
+//            if(isSearch){
+//                setSearchCategory(object.getModel().getDescription());
+//            } else {
+//                System.out.println("Category ID: " + object.getModel().getCategoryId());
+//                System.out.println("Description " + object.getModel().getDescription());
+//                Master().setCategoryLevel2(object.getModel().getCategoryId());
+//            }
+//        }
+        
+        
+        CategoryLevel2 object = new ParamControllers(poGRider, logwrapr).CategoryLevel2();
+        String lsSQL = MiscUtil.addCondition(object.getSQ_Browse(), "cRecdStat = " + SQLUtil.toSQL(RecordStatus.ACTIVE)
+                                            + " AND (sIndstCdx = '' OR ISNULL(sIndstCdx))"); //+ SQLUtil.toSQL(Master().getIndustryId()));
+        
+        System.out.println("Executing SQL: " + lsSQL);
+        poJSON = ShowDialogFX.Browse(poGRider,
+                lsSQL,
+                value,
+                "Category ID»Description",
+                "sCategrCd»sDescript",
+                "sCategrCd»sDescript",
+                byCode ? 0 : 1);
+
+        if (poJSON != null) {
+            poJSON = object.getModel().openRecord((String) poJSON.get("sCategrCd"));
+            if ("success".equals((String) poJSON.get("result"))) {
+                setSearchCategory(object.getModel().getDescription());
+            }
+        } else {
+            poJSON = new JSONObject();
+            poJSON.put("result", "error");
+            poJSON.put("message", "No record loaded.");
+        }
+        
+        return poJSON;
+    }
+    
     public JSONObject SearchTerm(String value, boolean byCode) throws ExceptionInInitializerError, SQLException, GuanzonException {
         Term object = new ParamControllers(poGRider, logwrapr).Term();
         object.setRecordStatus("1");
@@ -570,6 +663,132 @@ public class POQuotation extends Transaction {
             }
         }
         
+        poJSON.put("result", "success");
+        poJSON.put("message", "success");
+        return poJSON;
+    }
+    
+    public JSONObject computeFields()
+            throws SQLException,
+            GuanzonException {
+        poJSON = new JSONObject();
+
+        //Compute Transaction Total
+        Double ldblTotal = 0.00;
+        Double ldblDiscount = Master().getAdditionalDiscountAmount();
+        Double ldblDiscountRate = Master().getDiscountRate();
+        
+        for (int lnCtr = 0; lnCtr <= getDetailCount() - 1; lnCtr++) {
+            ldblTotal += (Detail(lnCtr).getUnitPrice() * Detail(lnCtr).getQuantity());
+        }
+        poJSON = Master().setTransactionTotal(ldblTotal); //Sum of purchase amount
+        if(ldblDiscountRate > 0){
+            ldblDiscountRate = ldblTotal * (ldblDiscountRate / 100);
+        }
+        
+        /*Compute VAT Amount*/
+        double ldblVatSales = 0.0000;
+        double ldblVatAmount = 0.0000;
+        double ldblTransactionTotal = 0.0000;
+        double ldblVatExempt = 0.00;
+        double ldblVatableTotal = 0.00;
+            
+        //VAT Sales : (Vatable Total + Freight Amount) - Discount Amount
+        ldblVatSales = (ldblTotal + Master().getFreightAmount()) - (ldblDiscount + ldblDiscountRate);
+
+        if(Master().isVatable()){
+            //VAT Amount : VAT Sales - (VAT Sales / 1.12)
+            ldblVatAmount = ldblVatSales - ( ldblVatSales / 1.12);
+            //Net VAT Sales : VAT Sales - VAT Amount
+            ldblTransactionTotal = ldblVatSales - ldblVatAmount;
+        } 
+        //else {
+//            //VAT Amount : VAT Sales - (VAT Sales / 1.12)
+//            ldblVatAmount = ldblVatSales - ( ldblVatSales / 1.12);
+//            //Net : VAT Sales - VAT Amount
+//            ldblTransactionTotal = ldblVatSales + ldblVatAmount;
+        //}
+
+        System.out.println("Vat Sales " + ldblTransactionTotal);
+        System.out.println("Vat Amount " + ldblVatAmount);
+        System.out.println("Vat Exempt " + ldblVatExempt);
+
+        poJSON = Master().setGrossAmount(ldblTotal);
+        poJSON = Master().setTransactionTotal(ldblTransactionTotal);
+        poJSON = Master().setVatAmount(ldblVatAmount);
+        if(Master().getVatRate() == 0.00){
+            if(getEditMode() == EditMode.UNKNOWN || Master().getEditMode() == EditMode.UNKNOWN){
+                poJSON = Master().setVatRate(0.00); //Set default value
+            } else {
+                poJSON = Master().setVatRate(12.00); //Set default value
+            }
+        }
+        return poJSON;
+    }
+    
+    public JSONObject computeDiscountRate(double discount) {
+        poJSON = new JSONObject();
+        Double ldblTotal = 0.00;
+        Double ldblDiscRate = 0.00;
+
+        for (int lnCtr = 0; lnCtr <= getDetailCount() - 1; lnCtr++) {
+            ldblTotal += (Detail(lnCtr).getUnitPrice()  * Detail(lnCtr).getQuantity());
+        }
+        
+        if (discount < 0 || discount > ldblTotal) {
+            Master().setAdditionalDiscountAmount(0.00);
+            computeDiscountRate(0.00);
+            poJSON.put("result", "error");
+            poJSON.put("message", "Discount amount cannot be negative or exceed the transaction total.");
+            return poJSON;
+        } else {
+//            ldblDiscRate = (discount / ldblTotal) * 100;
+//            ldblDiscRate = (discount / ldblTotal);
+            //nettotal = total - discount - rate
+//            Master().setDiscountRate(ldblDiscRate);
+
+            ldblTotal = ldblTotal - (discount + ((Master().getDiscountRate() / 100.00) * ldblTotal));
+            if(ldblTotal < 0 ){
+                poJSON.put("result", "error");
+                poJSON.put("message", "Invalid transaction net total.");
+                return poJSON;
+            }
+        }
+        poJSON.put("result", "success");
+        poJSON.put("message", "success");
+        return poJSON;
+    }
+
+    public JSONObject computeDiscount(double discountRate) {
+        poJSON = new JSONObject();
+        Double ldblTotal = 0.00;
+        Double ldblDiscount = 0.00;
+
+        for (int lnCtr = 0; lnCtr <= getDetailCount() - 1; lnCtr++) {
+            ldblTotal += (Detail(lnCtr).getUnitPrice() * Detail(lnCtr).getQuantity());
+        }
+
+        if (discountRate < 0 || discountRate > 100.00) {
+//        if (discountRate < 0 || discountRate > 1.00) {
+            Master().setDiscountRate(0.00);
+            computeDiscount(0.00);
+            poJSON.put("result", "error");
+            poJSON.put("message", "Discount rate cannot be negative or exceed 100.00");
+            return poJSON;
+        } else {
+//            ldblDiscount = ldblTotal * (discountRate / 100.00);
+//            ldblDiscount = ldblTotal * discountRate;
+            //nettotal = total - discount - rate
+//            Master().setDiscount(ldblDiscount);
+
+            ldblTotal = ldblTotal - (Master().getAdditionalDiscountAmount() + ((discountRate / 100.00) * ldblTotal));
+            if(ldblTotal < 0 ){
+                poJSON.put("result", "error");
+                poJSON.put("message", "Invalid transaction net total.");
+                return poJSON;
+            }
+        }
+
         poJSON.put("result", "success");
         poJSON.put("message", "success");
         return poJSON;

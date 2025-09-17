@@ -263,6 +263,11 @@ public class Model_PO_Quotation_Master extends Model {
     public JSONObject isVatable(boolean isVatable) {
         return setValue("cVATAdded", isVatable ? "1" : "0");
     }
+
+    public boolean isVatable() {
+        return ((String) getValue("cVATAdded")).equals("1");
+    }
+    
     
     public JSONObject setTaxAmount(Double taxAmount) {
         return setValue("nTWithHld", taxAmount);

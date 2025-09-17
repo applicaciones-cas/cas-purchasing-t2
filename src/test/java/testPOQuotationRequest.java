@@ -165,7 +165,7 @@ public class testPOQuotationRequest {
 
     }
     
-//    @Test
+    @Test
     public void testPOQuotationRequestList() throws SQLException {
         String lsTransNo = "";
         String industryId = "05";
@@ -457,7 +457,7 @@ public class testPOQuotationRequest {
         }
     } 
     
-    @Test
+//    @Test
     public void testExportTransaction() {
         JSONObject loJSON;
         
