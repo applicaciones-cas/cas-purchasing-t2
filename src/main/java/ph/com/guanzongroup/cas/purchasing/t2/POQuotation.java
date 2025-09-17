@@ -725,19 +725,22 @@ public class POQuotation extends Transaction {
         Double ldblTotal = 0.0000;
         Double ldblDiscount = Master().getAdditionalDiscountAmount();
         Double ldblDiscountRate = Master().getDiscountRate();
-        Double ldblDetailDiscount = 0.0000;
         Double ldblDetailDiscountRate = 0.00;
         Double ldblDetailTotal = 0.0000;
         
         for (int lnCtr = 0; lnCtr <= getDetailCount() - 1; lnCtr++) {
-            ldblDetailTotal = 
-            
-            
-            ldblTotal += (Detail(lnCtr).getUnitPrice() * Detail(lnCtr).getQuantity());
+            if(Detail(lnCtr).getDiscountRate() > 0){
+                ldblDetailDiscountRate = Detail(lnCtr).getUnitPrice() * (Detail(lnCtr).getDiscountRate() / 100);
+            }
+            //Cost = (Unit Price - (Discount Rate + Additional Discount) * Quantity)
+            ldblDetailTotal = (Detail(lnCtr).getUnitPrice() - (ldblDetailDiscountRate + Detail(lnCtr).getDiscountAmount())) *  Detail(lnCtr).getQuantity();
+            ldblTotal = ldblTotal + ldblDetailTotal;
             
             ldblDetailTotal = 0.0000;
+            ldblDetailDiscountRate = 0.00;
         }
-        poJSON = Master().setTransactionTotal(ldblTotal); //Sum of purchase amount
+        
+        poJSON = Master().setGrossAmount(ldblTotal);
         if(ldblDiscountRate > 0){
             ldblDiscountRate = ldblTotal * (ldblDiscountRate / 100);
         }
@@ -747,10 +750,9 @@ public class POQuotation extends Transaction {
         double ldblVatAmount = 0.0000;
         double ldblTransactionTotal = 0.0000;
         double ldblVatExempt = 0.00;
-        double ldblVatableTotal = 0.00;
             
         //VAT Sales : (Vatable Total + Freight Amount) - Discount Amount
-        ldblVatSales = (ldblTotal + Master().getFreightAmount()) - (ldblDiscount + ldblDiscountRate);
+        ldblVatSales = (Master().getGrossAmount() + Master().getFreightAmount()) - (ldblDiscount + ldblDiscountRate);
 
         if(Master().isVatable()){
             //VAT Amount : VAT Sales - (VAT Sales / 1.12)
@@ -769,7 +771,6 @@ public class POQuotation extends Transaction {
         System.out.println("Vat Amount " + ldblVatAmount);
         System.out.println("Vat Exempt " + ldblVatExempt);
 
-        poJSON = Master().setGrossAmount(ldblTotal);
         poJSON = Master().setTransactionTotal(ldblTransactionTotal);
         poJSON = Master().setVatAmount(ldblVatAmount);
         if(Master().getVatRate() == 0.00){
@@ -780,6 +781,15 @@ public class POQuotation extends Transaction {
             }
         }
         return poJSON;
+    }
+    
+    public Double getCost(int row){
+        Double ldblDetailDiscountRate = 0.00;
+        if(Detail(row).getDiscountRate() > 0){
+            ldblDetailDiscountRate = Detail(row).getUnitPrice() * (Detail(row).getDiscountRate() / 100);
+        }
+        //Cost = (Unit Price - (Discount Rate + Additional Discount) * Quantity)
+        return (Detail(row).getUnitPrice() - (ldblDetailDiscountRate + Detail(row).getDiscountAmount())) *  Detail(row).getQuantity();
     }
     
     public JSONObject computeDiscountRate(double discount) {
