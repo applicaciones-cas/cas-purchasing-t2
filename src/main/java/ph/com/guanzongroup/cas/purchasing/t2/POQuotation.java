@@ -472,12 +472,17 @@ public class POQuotation extends Transaction {
     public JSONObject SearchInventory(String value, boolean byCode, int row) throws SQLException, GuanzonException {
         poJSON = new JSONObject();
         poJSON.put("row", row);
+        
+        if(Master().getSourceNo() == null || "".equals(Master().getSourceNo())){
+            poJSON.put("result", "error");
+            poJSON.put("message", "Source No is not set.");
+            return poJSON;
+        }
+        
         Inventory object = new InvControllers(poGRider, logwrapr).Inventory();
         String lsSQL = MiscUtil.addCondition(object.getSQ_Browse(), 
-                                            // " a.cRecdStat = " + SQLUtil.toSQL(RecordStatus.ACTIVE)
                                             " a.sCategCd1 = " + SQLUtil.toSQL(Master().getCategoryCode())
-                                            + " AND a.sIndstCdx = " + SQLUtil.toSQL(Master().getIndustryId())
-//                                            + " AND a.sCategCd2 = " + SQLUtil.toSQL(Master().getCategory())
+                                            + " AND a.sCategCd2 = " + SQLUtil.toSQL(Master().POQuotationRequest().getCategoryLevel2())
                                             );
         
         System.out.println("Executing SQL: " + lsSQL);
@@ -1000,6 +1005,7 @@ public class POQuotation extends Transaction {
                     + " AND h.sCompnyNm LIKE " + SQLUtil.toSQL("%" + supplier) 
                     + " AND g.sDescript LIKE " + SQLUtil.toSQL("%" + category2) 
                     + " AND b.cTranStat = " + SQLUtil.toSQL(POQuotationRequestStatus.APPROVED)
+                    + " AND a.sTransNox NOT IN (SELECT q.sSourceNo FROM po_quotation_master q WHERE q.sSourceNo = a.sTransNox AND q.sCompnyID = a.sCompnyID AND q.sSupplier = a.sSupplier ) "
             );
 
             lsSQL = lsSQL + " ORDER BY b.dTransact DESC ";
@@ -1065,7 +1071,7 @@ public class POQuotation extends Transaction {
             Master().setSourceCode(object.getSourceCode());
             Master().setCompanyId(POQuotationRequestSupplierList(row).getCompanyId());
             Master().setBranchCode(object.Master().getBranchCode());
-            Master().setCategoryCode(object.Master().getCategoryLevel2());
+            Master().setCategoryCode(object.Master().getCategoryCode());
             Master().setValidityDate(object.Master().getExpectedPurchaseDate());
             
             for(int lnCtr = 0; lnCtr <= object.getDetailCount()-1; lnCtr++){
@@ -1106,14 +1112,11 @@ public class POQuotation extends Transaction {
 
         if ((getDetailCount() - 1) >= 0) {
             
-            if ( ((Detail(getDetailCount() - 1).getStockId() != null
-                    && !"".equals(Detail(getDetailCount() - 1).getStockId()))
-                || (Detail(getDetailCount() - 1).getDescription()!= null
-                    && !"".equals(Detail(getDetailCount() - 1).getDescription()))) 
-                && ((Detail(getDetailCount() - 1).getReplaceId()!= null
-                    && !"".equals(Detail(getDetailCount() - 1).getReplaceId()))
-                || (Detail(getDetailCount() - 1).getReplaceDescription()!= null
-                    && !"".equals(Detail(getDetailCount() - 1).getReplaceDescription())))){
+            if ( ( (Detail(getDetailCount() - 1).getStockId() != null && !"".equals(Detail(getDetailCount() - 1).getStockId()))
+                || (Detail(getDetailCount() - 1).getDescription()!= null && !"".equals(Detail(getDetailCount() - 1).getDescription())) )
+                    
+            || ((Detail(getDetailCount() - 1).getReplaceId()!= null && !"".equals(Detail(getDetailCount() - 1).getReplaceId()))
+                || (Detail(getDetailCount() - 1).getReplaceDescription()!= null && !"".equals(Detail(getDetailCount() - 1).getReplaceDescription())))){
                 AddDetail();
             }
         }
@@ -1225,8 +1228,8 @@ public class POQuotation extends Transaction {
         poJSON = new JSONObject();
 
         if (getDetailCount() > 0) {
-            if ((Detail(getDetailCount() - 1).getStockId()!= null || Detail(getDetailCount() - 1).getDescription() != null)
-                    && (Detail(getDetailCount() - 1).getReplaceId()!= null || Detail(getDetailCount() - 1).getReplaceDescription()!= null)){
+            if ((Detail(getDetailCount() - 1).getStockId() != null || Detail(getDetailCount() - 1).getDescription() != null)
+                    && (Detail(getDetailCount() - 1).getReplaceId() != null || Detail(getDetailCount() - 1).getReplaceDescription() != null)){
                 if ((Detail(getDetailCount() - 1).getStockId().isEmpty() && Detail(getDetailCount() - 1).getDescription().isEmpty())
                     && (Detail(getDetailCount() - 1).getReplaceId().isEmpty() && Detail(getDetailCount() - 1).getReplaceDescription().isEmpty())){
                     poJSON.put("result", "error");
