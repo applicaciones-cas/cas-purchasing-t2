@@ -1068,10 +1068,6 @@ public class POQuotation extends Transaction {
             Master().setCategoryCode(object.Master().getCategoryLevel2());
             Master().setValidityDate(object.Master().getExpectedPurchaseDate());
             
-            if(getDetailCount() < 1){
-                AddDetail();
-            }
-            
             for(int lnCtr = 0; lnCtr <= object.getDetailCount()-1; lnCtr++){
                 if(object.Detail(lnCtr).isReverse()){
                     Detail(getDetailCount()-1).setStockId(object.Detail(lnCtr).getStockId());
