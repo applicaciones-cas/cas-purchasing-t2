@@ -275,16 +275,16 @@ public class Model_PO_Quotation_Master extends Model {
     }
     
     
-    public JSONObject setTaxAmount(Double taxAmount) {
-        return setValue("nTWithHld", taxAmount);
-    }
-
-    public Double getTaxAmount() {
-        if (getValue("nTWithHld") == null || "".equals(getValue("nTWithHld"))) {
-            return 0.0000;
-        }
-        return Double.valueOf(getValue("nTWithHld").toString());
-    }
+//    public JSONObject setTaxAmount(Double taxAmount) {
+//        return setValue("nTWithHld", taxAmount);
+//    }
+//
+//    public Double getTaxAmount() {
+//        if (getValue("nTWithHld") == null || "".equals(getValue("nTWithHld"))) {
+//            return 0.0000;
+//        }
+//        return Double.valueOf(getValue("nTWithHld").toString());
+//    }
     
     public JSONObject setFreightAmount(Double freighAmount) {
         return setValue("nFreightx", freighAmount);

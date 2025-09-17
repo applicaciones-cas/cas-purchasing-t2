@@ -689,11 +689,10 @@ public class POQuotation extends Transaction {
             if (lnCtr != row) {
                 //Check Existing Stock ID and Description
                 if(!"".equals(stockId) || !"".equals(description)){
-                    if(((stockId.equals(Detail(lnCtr).getStockId())   && isSearch )
-                        || description.equals(Detail(lnCtr).getDescription()))
-                            || ((stockId.equals(Detail(lnCtr).getReplaceId()) && isSearch )
-                            || description.equals(Detail(lnCtr).getReplaceDescription()))
-                            ){
+                    if(((stockId.equals(Detail(lnCtr).getStockId())  && isSearch )
+                            || (description.equals(Detail(lnCtr).getDescription())))
+                            || ((stockId.equals(Detail(lnCtr).getReplaceId())  && isSearch )
+                            || (description.equals(Detail(lnCtr).getReplaceDescription())))){
                         if(Detail(lnCtr).isReverse()){
                             loJSON.put("result", "error");
                             loJSON.put("message", "Item Description already exists in the transaction detail at row "+lnRow+".");
@@ -1091,36 +1090,39 @@ public class POQuotation extends Transaction {
         return poJSON;
     }
     
-//    public void ReloadDetail() throws CloneNotSupportedException{
-//        int lnCtr = getDetailCount() - 1;
-//        while (lnCtr >= 0) {
-//            if ((Detail(lnCtr).getStockId() == null || "".equals(Detail(lnCtr).getStockId()))
-//                    && (Detail(lnCtr).getDescription()== null || "".equals(Detail(lnCtr).getDescription()))) {
-//                
-//                if(Detail(lnCtr).getEditMode() == EditMode.ADDNEW){
-//                    deleteDetail(lnCtr); 
-//                    //Detail().remove(lnCtr);
-//                } else {
-//                    Detail(lnCtr).isReverse(false);
-//                    removeDetail(Detail(lnCtr));
-//                }
-//            }
-//            lnCtr--;
-//        }
-//
-//        if ((getDetailCount() - 1) >= 0) {
-//            if ((Detail(getDetailCount() - 1).getStockId() != null
-//                    && !"".equals(Detail(getDetailCount() - 1).getStockId()))
-//                || (Detail(getDetailCount() - 1).getDescription()!= null
-//                    && !"".equals(Detail(getDetailCount() - 1).getDescription()))) {
-//                AddDetail();
-//            }
-//        }
-//
-//        if ((getDetailCount() - 1) < 0) {
-//            AddDetail();
-//        }
-//    }
+    public void ReloadDetail() throws CloneNotSupportedException{
+        int lnCtr = getDetailCount() - 1;
+        while (lnCtr >= 0) {
+            if (((Detail(lnCtr).getStockId() == null || "".equals(Detail(lnCtr).getStockId()))
+                    && (Detail(lnCtr).getDescription()== null || "".equals(Detail(lnCtr).getDescription())))
+                || ((Detail(lnCtr).getReplaceId()== null || "".equals(Detail(lnCtr).getReplaceId()))
+                    && (Detail(lnCtr).getReplaceDescription()== null || "".equals(Detail(lnCtr).getReplaceDescription())))){
+                
+                if(Detail(lnCtr).getEditMode() == EditMode.ADDNEW){
+                    deleteDetail(lnCtr); 
+                }
+            }
+            lnCtr--;
+        }
+
+        if ((getDetailCount() - 1) >= 0) {
+            
+            if ( ((Detail(getDetailCount() - 1).getStockId() != null
+                    && !"".equals(Detail(getDetailCount() - 1).getStockId()))
+                || (Detail(getDetailCount() - 1).getDescription()!= null
+                    && !"".equals(Detail(getDetailCount() - 1).getDescription()))) 
+                || ((Detail(getDetailCount() - 1).getReplaceId()!= null
+                    && !"".equals(Detail(getDetailCount() - 1).getReplaceId()))
+                || (Detail(getDetailCount() - 1).getReplaceDescription()!= null
+                    && !"".equals(Detail(getDetailCount() - 1).getReplaceDescription())))){
+                AddDetail();
+            }
+        }
+
+        if ((getDetailCount() - 1) < 0) {
+            AddDetail();
+        }
+    }
     
     private Model_PO_Quotation_Master POQuotationMaster() {
         return new QuotationModels(poGRider).POQuotationMaster();
@@ -1224,8 +1226,10 @@ public class POQuotation extends Transaction {
         poJSON = new JSONObject();
 
         if (getDetailCount() > 0) {
-            if (Detail(getDetailCount() - 1).getStockId()!= null || Detail(getDetailCount() - 1).getDescription() != null) {
-                if (Detail(getDetailCount() - 1).getStockId().isEmpty() && Detail(getDetailCount() - 1).getDescription().isEmpty()) {
+            if ((Detail(getDetailCount() - 1).getStockId()!= null || Detail(getDetailCount() - 1).getDescription() != null)
+                    && (Detail(getDetailCount() - 1).getReplaceId()!= null || Detail(getDetailCount() - 1).getReplaceDescription()!= null)){
+                if ((Detail(getDetailCount() - 1).getStockId().isEmpty() && Detail(getDetailCount() - 1).getDescription().isEmpty())
+                    && (Detail(getDetailCount() - 1).getReplaceId().isEmpty() && Detail(getDetailCount() - 1).getReplaceDescription().isEmpty())){
                     poJSON.put("result", "error");
                     poJSON.put("message", "Last row has empty item.");
                     return poJSON;
@@ -1419,6 +1423,8 @@ public class POQuotation extends Transaction {
             }
             if (((item.getValue("sDescript") == null || "".equals(item.getValue("sDescript")))
                   &&  (item.getValue("sStockIDx") == null || "".equals(item.getValue("sStockIDx"))))
+                  && ((item.getValue("sReplacDs") == null || "".equals(item.getValue("sReplacDs")))
+                  &&  (item.getValue("sReplacID") == null || "".equals(item.getValue("sReplacID"))))
                   || (Double.valueOf(lsQuantity) <= 0.00)) {
 
                 if (item.getEditMode() == EditMode.ADDNEW) {
