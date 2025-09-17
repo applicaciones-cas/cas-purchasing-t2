@@ -974,6 +974,7 @@ public class POQuotation extends Transaction {
     }
     
     public JSONObject loadPOQuotationRequestSupplierList(String company, String branch, String department, String supplier, String category2) {
+        paPORequestSupplier = new ArrayList<>();
         try {
             if (company == null) {
                 company = "";
@@ -1010,7 +1011,7 @@ public class POQuotation extends Transaction {
             int lnctr = 0;
 
             if (MiscUtil.RecordCount(loRS) >= 0) {
-                paMasterList = new ArrayList<>();
+                paPORequestSupplier = new ArrayList<>();
                 while (loRS.next()) {
                     // Print the result set
                     System.out.println("sTransNox: " + loRS.getString("sTransNox"));

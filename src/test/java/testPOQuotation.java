@@ -39,15 +39,15 @@ public class testPOQuotation {
         poController = new QuotationControllers(instance, null).POQuotation();
     }
 
-//    @Test
+    @Test
     public void testNewTransaction() {
         String branchCd = instance.getBranchCode();
-        String industryId = "05";
-        String companyId = "0003";
+        String industryId = "03";
+        String companyId = "0004";
         String categoryId = "0007";
         String category2 = "0022";
         String remarks = "this is a test Class 4.";
-        String sourceNo = "A00125000002";
+        String sourceNo = "A00125000015";
         String sourceCode = "POQR";
         String supplierId = "V00125000003";
         String term = "0000003";
@@ -101,13 +101,10 @@ public class testPOQuotation {
                 poController.Master().setGrossAmount(5000.00);
                 poController.Master().setTransactionTotal(5000.00);
 
-                poController.Detail(0).setStockId("M00125000017");
+                poController.Detail(0).setStockId("P0W125000008");
                 poController.Detail(0).setDescription("General Asset Model1");
                 poController.Detail(0).setQuantity(4.00);
                 poController.AddDetail();
-                poController.Detail(1).setStockId("M00125000018");
-                poController.Detail(1).setDescription("General Asset Model2");
-                poController.Detail(1).setQuantity(1.00);
 
                 System.out.println("Industry ID : " + instance.getIndustry());
                 System.out.println("Industry : " + poController.Master().Industry().getDescription());

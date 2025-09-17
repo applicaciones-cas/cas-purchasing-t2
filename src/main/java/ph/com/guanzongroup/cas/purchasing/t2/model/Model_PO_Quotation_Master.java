@@ -494,12 +494,12 @@ public class Model_PO_Quotation_Master extends Model {
     }
     
     public Model_Client_Master Supplier() throws SQLException, GuanzonException {
-        if (!"".equals((String) getValue("sClientID"))) {
+        if (!"".equals((String) getValue("sSupplier"))) {
             if (poSupplier.getEditMode() == EditMode.READY
-                    && poSupplier.getClientId().equals((String) getValue("sClientID"))) {
+                    && poSupplier.getClientId().equals((String) getValue("sSupplier"))) {
                 return poSupplier;
             } else {
-                poJSON = poSupplier.openRecord((String) getValue("sClientID"));
+                poJSON = poSupplier.openRecord((String) getValue("sSupplier"));
 
                 if ("success".equals((String) poJSON.get("result"))) {
                     return poSupplier;
@@ -515,12 +515,12 @@ public class Model_PO_Quotation_Master extends Model {
     }
     
     public Model_Client_Address Address() throws SQLException, GuanzonException {
-        if (!"".equals((String) getValue("sClientID"))) {
+        if (!"".equals((String) getValue("sSupplier"))) {
             if (poSupplierAddress.getEditMode() == EditMode.READY
-                    && poSupplierAddress.getClientId().equals((String) getValue("sClientID"))) {
+                    && poSupplierAddress.getClientId().equals((String) getValue("sSupplier"))) {
                 return poSupplierAddress;
             } else {
-                poJSON = poSupplierAddress.openRecord((String) getValue("sClientID")); //sAddrssID
+                poJSON = poSupplierAddress.openRecord((String) getValue("sSupplier")); //sAddrssID
 
                 if ("success".equals((String) poJSON.get("result"))) {
                     return poSupplierAddress;
