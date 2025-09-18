@@ -91,16 +91,11 @@ public class POQuotation_MP implements GValidator{
         poJSON = new JSONObject();
         Date loTransactionDate = poMaster.getTransactionDate();
         Date loValidityDate = poMaster.getValidityDate();
-        Date loReferenceDate = poMaster.getValidityDate();
+        Date loReferenceDate = poMaster.getReferenceDate();
         LocalDate serverDate = strToDate(xsDateShort(poGRider.getServerDate()));
         LocalDate oneYearAgo = serverDate.minusYears(1);
         
         if (loTransactionDate == null) {
-            poJSON.put("message", "Invalid Transaction Date.");
-            return poJSON;
-        }
-
-        if ("1900-01-01".equals(xsDateShort(loTransactionDate))) {
             poJSON.put("message", "Invalid Transaction Date.");
             return poJSON;
         }
@@ -110,12 +105,22 @@ public class POQuotation_MP implements GValidator{
             return poJSON;
         }
 
-        if ("1900-01-01".equals(xsDateShort(loReferenceDate))) {
+        if (loReferenceDate == null) {
             poJSON.put("message", "Invalid Reference Date.");
             return poJSON;
         }
+
+        if ("1900-01-01".equals(xsDateShort(loTransactionDate))) {
+            poJSON.put("message", "Invalid Transaction Date.");
+            return poJSON;
+        }
         
-        if (loReferenceDate == null) {
+        if ("1900-01-01".equals(xsDateShort(loValidityDate))) {
+            poJSON.put("message", "Invalid Validity Date.");
+            return poJSON;
+        }
+        
+        if ("1900-01-01".equals(xsDateShort(loReferenceDate))) {
             poJSON.put("message", "Invalid Reference Date.");
             return poJSON;
         }
