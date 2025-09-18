@@ -161,8 +161,12 @@ public class testPOQuotation {
             
             //Update fields
             poController.Detail(0).setUnitPrice(1000.00);
-            poController.Master().isVatable(true);
+            poController.Detail(0).setDiscountRate(0.10);
+            poController.Detail(0).setDiscountAmount(50.00);
+            poController.Master().isVatable(false);
+            poController.Master().setDiscountRate(0.00);
             poController.Master().setAdditionalDiscountAmount(0.0000);
+            poController.Master().setFreightAmount(100.00);
             poController.computeFields();
             
             loJSON = poController.SaveTransaction();

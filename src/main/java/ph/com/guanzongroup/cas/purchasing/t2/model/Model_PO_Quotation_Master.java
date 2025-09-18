@@ -294,7 +294,7 @@ public class Model_PO_Quotation_Master extends Model {
         if (getValue("nFreightx") == null || "".equals(getValue("nFreightx"))) {
             return 0.00;
         }
-        return Double.valueOf(getValue("nTWithHld").toString());
+        return Double.valueOf(getValue("nFreightx").toString());
     }
     
     public JSONObject setTransactionTotal(Double transactionTotal) {

@@ -754,12 +754,14 @@ public class POQuotation extends Transaction {
             
         //VAT Sales : (Vatable Total + Freight Amount) - Discount Amount
         ldblVatSales = (Master().getGrossAmount() + Master().getFreightAmount()) - (ldblDiscount + ldblDiscountRate);
+        //VAT Amount : VAT Sales - (VAT Sales / 1.12)
+        ldblVatAmount = ldblVatSales - ( ldblVatSales / 1.12);
 
-        if(Master().isVatable()){
-            //VAT Amount : VAT Sales - (VAT Sales / 1.12)
-            ldblVatAmount = ldblVatSales - ( ldblVatSales / 1.12);
+        if(Master().isVatable()){ //Add VAT
             //Net VAT Sales : VAT Sales - VAT Amount
-            ldblTransactionTotal = ldblVatSales - ldblVatAmount;
+            ldblTransactionTotal = ldblVatSales + ldblVatAmount;
+        } else {
+            ldblTransactionTotal = ldblVatSales;
         } 
         //else {
 //            //VAT Amount : VAT Sales - (VAT Sales / 1.12)
