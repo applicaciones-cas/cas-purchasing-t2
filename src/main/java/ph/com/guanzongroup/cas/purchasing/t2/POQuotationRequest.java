@@ -1427,7 +1427,7 @@ public class POQuotationRequest extends Transaction {
                 detail.remove();
             } else {
                 paDetailRemoved.add(item);
-                item.setValue("cReversex", "0");
+                item.setValue("cReversex", POQuotationRequestStatus.Reverse.EXCLUDE);
             }
         }
 
@@ -1447,7 +1447,7 @@ public class POQuotationRequest extends Transaction {
                     detail.remove();
                 } else {
                     paDetailRemoved.add(item);
-                    item.setValue("cReversex", "0");
+                    item.setValue("cReversex", POQuotationRequestStatus.Reverse.EXCLUDE);
                 }
             }
         }
@@ -1623,7 +1623,7 @@ public class POQuotationRequest extends Transaction {
                     detail.remove();
                 } else {
                     paDetailRemoved.add(item);
-                    item.setValue("cReversex", "0");
+                    item.setValue("cReversex", POQuotationRequestStatus.Reverse.EXCLUDE);
                 }
 
             }

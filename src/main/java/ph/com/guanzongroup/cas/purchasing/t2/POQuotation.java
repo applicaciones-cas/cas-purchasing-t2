@@ -528,16 +528,6 @@ public class POQuotation extends Transaction {
                     Detail(row).setReplaceId(object.getModel().getStockId());
                     Detail(row).setReplaceDescription(object.getModel().getDescription());
                 }
-                   
-//                if(object.getModel().Variant().getSellingPrice() != 0.0000){  //Error TODO
-//                    Detail(row).setSellPrice(object.getModel().Variant().getSellingPrice());
-//                } else {
-                    if(object.getModel().getSellingPrice() != null){
-                        Detail(row).setUnitPrice(object.getModel().getSellingPrice().doubleValue());
-                    } else {
-                        Detail(row).setUnitPrice(0.0000);
-                    }
-//                }
             }
             
             System.out.println("Barcode : " + Detail(row).Inventory().getBarCode());
@@ -1031,7 +1021,7 @@ public class POQuotation extends Transaction {
                     + " AND h.sCompnyNm LIKE " + SQLUtil.toSQL("%" + supplier) 
                     + " AND g.sDescript LIKE " + SQLUtil.toSQL("%" + category2) 
                     + " AND b.cTranStat = " + SQLUtil.toSQL(POQuotationRequestStatus.APPROVED)
-                    + " AND a.cReversex = '+' "
+                    + " AND a.cReversex = "+POQuotationRequestStatus.Reverse.INCLUDE+" "
                     + " AND a.sTransNox NOT IN (SELECT q.sSourceNo FROM po_quotation_master q "
                             + " WHERE q.sSourceNo = a.sTransNox AND q.sCompnyID = a.sCompnyID AND q.sSupplier = a.sSupplier "
                             + " AND (q.cTranStat != "+POQuotationStatus.CANCELLED+" AND q.cTranStat != "+POQuotationStatus.VOID+")) "
@@ -1126,7 +1116,7 @@ public class POQuotation extends Transaction {
                     Detail(getDetailCount()-1).setStockId(object.Detail(lnCtr).getStockId());
                     Detail(getDetailCount()-1).setDescription(object.Detail(lnCtr).getDescription());
                     Detail(getDetailCount()-1).setQuantity(object.Detail(lnCtr).getQuantity());
-                    Detail(getDetailCount()-1).setUnitPrice(object.Detail(lnCtr).getUnitPrice());
+//                    Detail(getDetailCount()-1).setUnitPrice(object.Detail(lnCtr).getUnitPrice()); //User Input
                     AddDetail();
                 }
             }
@@ -1483,13 +1473,13 @@ public class POQuotation extends Transaction {
                 if (item.getEditMode() == EditMode.ADDNEW) {
                     if(item.getValue("sDescript") != null && !"".equals(item.getValue("sDescript"))
                         && Double.valueOf(lsQuantity) <= 0.00){
-                        item.setValue("cReversex", "-");
+                        item.setValue("cReversex", POQuotationStatus.Reverse.EXCLUDE);
                     } else {
                         detail.remove();
                     }
                 } else {
                     paDetailRemoved.add(item);
-                    item.setValue("cReversex", "-");
+                    item.setValue("cReversex", POQuotationStatus.Reverse.EXCLUDE);
                 }
             }
             

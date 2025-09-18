@@ -68,8 +68,6 @@ public class POQuotation_Vehicle implements GValidator{
                     return validateNew();
                 case POQuotationStatus.CONFIRMED:
                     return validateConfirmed();
-                case POQuotationStatus.DISAPPROVED:
-                    return validateDisApproved();
                 case POQuotationStatus.POSTED:
                     return validatePosted();
                 case POQuotationStatus.CANCELLED:
