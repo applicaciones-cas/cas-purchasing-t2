@@ -785,12 +785,21 @@ public class POQuotation extends Transaction {
     }
     
     public Double getCost(int row){
+//        Double ldblDetailDiscountRate = 0.00;
+//        if(Detail(row).getDiscountRate() > 0){
+//            ldblDetailDiscountRate = Detail(row).getUnitPrice() * (Detail(row).getDiscountRate() / 100);
+//        }
+        //Cost = (Unit Price - (Discount Rate + Additional Discount) * Quantity)
+        return (Detail(row).getUnitPrice() - getDiscount(row)) *  Detail(row).getQuantity();
+    }
+    
+    public Double getDiscount(int row){
         Double ldblDetailDiscountRate = 0.00;
         if(Detail(row).getDiscountRate() > 0){
             ldblDetailDiscountRate = Detail(row).getUnitPrice() * (Detail(row).getDiscountRate() / 100);
         }
         //Cost = (Unit Price - (Discount Rate + Additional Discount) * Quantity)
-        return (Detail(row).getUnitPrice() - (ldblDetailDiscountRate + Detail(row).getDiscountAmount())) *  Detail(row).getQuantity();
+        return ldblDetailDiscountRate + Detail(row).getDiscountAmount();
     }
     
     public JSONObject computeDiscountRate(double discount) {
@@ -1372,6 +1381,7 @@ public class POQuotation extends Transaction {
             CloneNotSupportedException {
         /*Put system validations and other assignments here*/
         poJSON = new JSONObject();
+        computeFields();
         
         if (POQuotationStatus.CONFIRMED.equals(Master().getTransactionStatus())) {
             if (poGRider.getUserLevel() <= UserRight.ENCODER) {

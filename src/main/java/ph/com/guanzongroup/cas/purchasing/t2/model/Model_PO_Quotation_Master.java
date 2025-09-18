@@ -63,7 +63,7 @@ public class Model_PO_Quotation_Master extends Model {
             poEntity.updateNull("dModified");
             poEntity.updateNull("dLastMail");
             poEntity.updateObject("nGrossAmt", 0.0000);
-            poEntity.updateObject("nDiscount", 0.00);
+            poEntity.updateObject("nDiscount", 0.0000);
             poEntity.updateObject("nAddDiscx", 0.0000);
             poEntity.updateObject("nVATRatex", 0.00);
             poEntity.updateObject("nVATAmtxx", 0.0000);
@@ -256,7 +256,7 @@ public class Model_PO_Quotation_Master extends Model {
     }
     
     public JSONObject setVatAmount(Double vatAmount) {
-        return setValue("nAddDiscx", vatAmount);
+        return setValue("nVATAmtxx", vatAmount);
     }
 
     public Double getVatAmount() {
@@ -553,6 +553,27 @@ public class Model_PO_Quotation_Master extends Model {
         } else {
             poSupplierMobile.initialize();
             return poSupplierMobile;
+        }
+    }
+    
+    public Model_Term Term() throws SQLException, GuanzonException {
+        if (!"".equals((String) getValue("sTermCode"))) {
+            if (poTerm.getEditMode() == EditMode.READY
+                    && poTerm.getTermId().equals((String) getValue("sTermCode"))) {
+                return poTerm;
+            } else {
+                poJSON = poTerm.openRecord((String) getValue("sTermCode"));
+
+                if ("success".equals((String) poJSON.get("result"))) {
+                    return poTerm;
+                } else {
+                    poTerm.initialize();
+                    return poTerm;
+                }
+            }
+        } else {
+            poTerm.initialize();
+            return poTerm;
         }
     }
     

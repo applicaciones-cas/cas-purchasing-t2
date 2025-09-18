@@ -39,7 +39,7 @@ public class testPOQuotation {
         poController = new QuotationControllers(instance, null).POQuotation();
     }
 
-    @Test
+//    @Test
     public void testNewTransaction() {
         String branchCd = instance.getBranchCode();
         String industryId = "03";
@@ -136,7 +136,7 @@ public class testPOQuotation {
         }
     }
 
-//    @Test
+    @Test
     public void testUpdateTransaction() {
         JSONObject loJSON;
 
@@ -147,7 +147,7 @@ public class testPOQuotation {
                 Assert.fail();
             }
 
-            loJSON = poController.OpenTransaction("A00125000001");
+            loJSON = poController.OpenTransaction("A00125000002");
             if (!"success".equals((String) loJSON.get("result"))) {
                 System.err.println((String) loJSON.get("message"));
                 Assert.fail();
@@ -160,6 +160,10 @@ public class testPOQuotation {
             }
             
             //Update fields
+            poController.Detail(0).setUnitPrice(1000.00);
+            poController.Master().isVatable(true);
+            poController.Master().setAdditionalDiscountAmount(0.0000);
+            poController.computeFields();
             
             loJSON = poController.SaveTransaction();
             if (!"success".equals((String) loJSON.get("result"))) {
