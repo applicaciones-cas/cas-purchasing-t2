@@ -673,16 +673,22 @@ public class POQuotation extends Transaction {
                     return poJSON;
                 }
                 
-                JSONObject loJSON = checkExistingDetail(row,
-                        object.getModel().getStockId(),
-                        object.getModel().getDescription()
-                        );
+                JSONObject loJSON = checkExistingReverse(row);
                 if ("error".equals((String) loJSON.get("result"))) {
-                    if((boolean) loJSON.get("reverse")){
-                        return loJSON;
-                    } else {
-                        row = (int) loJSON.get("row");
-                        Detail(row).isReverse(true);
+                    row = (int) loJSON.get("row");
+                    Detail(row).isReverse(true);
+                } else {
+                    loJSON = checkExistingDetail(row,
+                            object.getModel().getStockId(),
+                            object.getModel().getDescription()
+                            );
+                    if ("error".equals((String) loJSON.get("result"))) {
+                        if((boolean) loJSON.get("reverse")){
+                            return loJSON;
+                        } else {
+                            row = (int) loJSON.get("row");
+                            Detail(row).isReverse(true);
+                        }
                     }
                 }
                 
@@ -924,6 +930,35 @@ public class POQuotation extends Transaction {
         loJSON.put("message", "success");
         return loJSON;
     }
+    
+    public JSONObject checkExistingReverse(int row){
+        JSONObject loJSON = new JSONObject();
+        loJSON.put("row", row);
+        int lnRow = 0;
+        for (int lnCtr = 0; lnCtr <= getDetailCount()- 1; lnCtr++) {
+            if(Detail(lnCtr).isReverse()){
+                lnRow++;
+            }
+            if (lnCtr != row) {
+                if(Detail(lnCtr).getDescription().equals(Detail(row).getDescription())
+                    && !Detail(lnCtr).isReverse()){
+                    if(Detail(lnCtr).isReverse()){
+                        loJSON.put("result", "error");
+                        loJSON.put("reverse", false);
+                        loJSON.put("row", lnCtr);
+                        return loJSON;
+                    }
+
+                }
+            }
+        }
+        
+        loJSON.put("result", "success");
+        loJSON.put("message", "success");
+        return loJSON;
+    }
+    
+    
 //    public JSONObject checkExistingDetail(int row, String stockId, String description, boolean isSearch){
 //        JSONObject loJSON = new JSONObject();
 //        loJSON.put("row", row);
