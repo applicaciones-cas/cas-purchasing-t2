@@ -12,7 +12,7 @@ package ph.com.guanzongroup.cas.purchasing.t2.status;
 public class POQuotationStatus {
     public static final String OPEN = "0";
     public static final  String CONFIRMED = "1";
-    public static final  String POSTED = "2"; 
+    public static final  String APPROVED = "2"; 
     public static final  String CANCELLED = "3";
     public static final  String VOID = "4";
     

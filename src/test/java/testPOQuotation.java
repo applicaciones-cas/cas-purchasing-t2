@@ -493,7 +493,7 @@ public class testPOQuotation {
                 }
             }
             
-            loJSON = poController.PostTransaction("test post");
+            loJSON = poController.ApproveTransaction("test post");
             if (!"success".equals((String) loJSON.get("result"))){
                 System.err.println((String) loJSON.get("message"));
                 Assert.fail();
