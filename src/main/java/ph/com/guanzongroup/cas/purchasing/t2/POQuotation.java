@@ -593,7 +593,18 @@ public class POQuotation extends Transaction {
         if (poJSON != null) {
             poJSON = object.openRecord((String) poJSON.get("sTransNox"), (String) poJSON.get("nEntryNox"));
             if ("success".equals((String) poJSON.get("result"))) {
+                
                 JSONObject loJSON = checkRequestItem(row,
+                        object.getDescription()
+                        );
+                if ("error".equals((String) loJSON.get("result"))) {
+                    if((boolean) loJSON.get("reverse")){
+                        return loJSON;
+                    } 
+                }
+                
+                loJSON = checkExistingDetail(row,
+                        object.getStockId(),
                         object.getDescription()
                         );
                 if ("error".equals((String) loJSON.get("result"))) {
@@ -607,8 +618,6 @@ public class POQuotation extends Transaction {
                 
                 Detail(row).setStockId(object.getStockId());
                 Detail(row).setDescription(object.getDescription());
-                Detail(row).setReplaceId("");
-                Detail(row).setReplaceDescription("");
             }
         } else {
             poJSON = new JSONObject();
@@ -814,15 +823,15 @@ public class POQuotation extends Transaction {
         JSONObject loJSON = new JSONObject();
         loJSON.put("row", row);
         String lsDescription = Detail(row).getDescription();
-        boolean lbIsExist = false;
+        int lnExist = 0;
         for (int lnCtr = 0; lnCtr <= getDetailCount()- 1; lnCtr++) {
             if(lsDescription.equals(Detail(lnCtr).getDescription())){
-                lbIsExist = true;
+                lnExist++;
                 break; 
             }
         }
         
-        if(!lbIsExist){
+        if(lnExist==1){
             Detail(row).isReverse(false);
         } else {
             Detail().remove(row);
