@@ -417,19 +417,19 @@ public class POQuotation extends Transaction {
         }
         
         String lsBranch = fsBranch != null && !"".equals(fsBranch) 
-                                                    ? " AND a.sDescript LIKE " + SQLUtil.toSQL("%"+fsBranch)
+                                                    ? " AND c.sBranchNm LIKE " + SQLUtil.toSQL("%"+fsBranch)
                                                     : "";
         
         String lsDepartment = fsDepartment != null && !"".equals(fsDepartment) 
-                                                    ? " AND a.sDescript LIKE " + SQLUtil.toSQL("%"+fsDepartment)
+                                                    ? " AND h.sDeptName LIKE " + SQLUtil.toSQL("%"+fsDepartment)
                                                     : "";                                           
 
         String lsSupplier = fsSupplier != null && !"".equals(fsSupplier) 
-                                                    ? " AND a.sDescript LIKE " + SQLUtil.toSQL("%"+fsSupplier)
+                                                    ? " AND i.sCompnyNm LIKE " + SQLUtil.toSQL("%"+fsSupplier)
                                                     : "";    
         
         String lsCategory = fsCateogry != null && !"".equals(fsCateogry) 
-                                                    ? " AND a.sDescript LIKE " + SQLUtil.toSQL("%"+fsCateogry)
+                                                    ? " AND f.sDescript LIKE " + SQLUtil.toSQL("%"+fsCateogry)
                                                     : "";  
         
         String lsTransactionNo = fsTransactionNo != null && !"".equals(fsTransactionNo) 
@@ -595,16 +595,6 @@ public class POQuotation extends Transaction {
             if ("success".equals((String) poJSON.get("result"))) {
                 
                 JSONObject loJSON = checkRequestItem(row,
-                        object.getDescription()
-                        );
-                if ("error".equals((String) loJSON.get("result"))) {
-                    if((boolean) loJSON.get("reverse")){
-                        return loJSON;
-                    } 
-                }
-                
-                loJSON = checkExistingDetail(row,
-                        object.getStockId(),
                         object.getDescription()
                         );
                 if ("error".equals((String) loJSON.get("result"))) {
@@ -826,22 +816,77 @@ public class POQuotation extends Transaction {
     
     /*Validate*/
     public void ReverseItem(int row){
-        JSONObject loJSON = new JSONObject();
-        loJSON.put("row", row);
-        String lsDescription = Detail(row).getDescription();
         int lnExist = 0;
         for (int lnCtr = 0; lnCtr <= getDetailCount()- 1; lnCtr++) {
-            if(lsDescription.equals(Detail(lnCtr).getDescription())){
-                lnExist++;
-                break; 
+            if(lnCtr != row){
+                if(Detail(row).getDescription().equals(Detail(lnCtr).getDescription())){
+                    lnExist++;
+                    break; 
+                }
             }
         }
         
-        if(lnExist==1){
-            Detail(row).isReverse(false);
-        } else {
+        if(lnExist >= 1){
             Detail().remove(row);
+        } else {
+            Detail(row).isReverse(false);
         }
+    }
+    
+    public JSONObject RemovedExcessRequestItem(int row){
+        poJSON = new JSONObject();
+        boolean lbRepEmpty = false;
+        int lnCtr = 0;
+        for (lnCtr = 0; lnCtr <= getDetailCount()- 1; lnCtr++) {
+            if(lnCtr != row){
+                if(Detail(row).getDescription().equals(Detail(lnCtr).getDescription())){
+                    if(Detail(lnCtr).getReplaceDescription() == null || "".equals(Detail(lnCtr).getReplaceDescription())){
+                        if(Detail(lnCtr).getEditMode() == EditMode.ADDNEW){
+                            Detail().remove(lnCtr);
+                            break;
+                        }
+                        lbRepEmpty = true;
+                        break;
+                    }
+                }
+            }
+        }
+        
+        if(Detail(row).getEditMode() == EditMode.UPDATE){
+            if(lbRepEmpty){
+                poJSON.put("result", "error");
+                poJSON.put("message", "Replace Description cannot be empty.");
+                return poJSON;
+            }
+        } 
+        
+        poJSON.put("result", "success");
+        poJSON.put("message", "success");
+        return poJSON;
+    }
+    
+    //check if there is not empty replacement if true all request description must have a replacement description value
+    private boolean validateReplacement(String description){
+        for(int lnCtr = 0; lnCtr <= getDetailCount()-1; lnCtr++){
+            if(description.equals(Detail(lnCtr).getDescription())){
+                if (Detail(lnCtr).getReplaceDescription() != null && !"".equals(Detail(lnCtr).getReplaceDescription())) {
+                    return true;
+                }
+            }
+        }
+        
+        return false;
+    }
+    
+    public boolean RequestMultipleItem(String description){
+        int lnExist = 0;
+        for (int lnCtr = 0; lnCtr <= getDetailCount()- 1; lnCtr++) {
+            if(description.equals(Detail(lnCtr).getDescription())){
+                lnExist++;
+            }
+        }
+        
+        return lnExist > 1;
     }
     
     public JSONObject checkRequestItem(int row, String description){
@@ -852,27 +897,38 @@ public class POQuotation extends Transaction {
         }
         int lnRow = 0;
         for (int lnCtr = 0; lnCtr <= getDetailCount()- 1; lnCtr++) {
-            if(Detail(lnCtr).isReverse()){
+            //if(Detail(lnCtr).isReverse()){
                 lnRow++;
-            }
+            //}
             if (lnCtr != row) {
                 //Check Existing Stock and Description
                 if(!"".equals(description) ){
                     if(description.equals(Detail(lnCtr).getDescription()) 
-                        && (Detail(lnCtr).getReplaceId() == null || "".equals(Detail(lnCtr).getReplaceId()))
                         ){
                         
-                        if(Detail(lnCtr).isReverse()){
-                            loJSON.put("result", "error");
-                            loJSON.put("message", "Item Description already exists in the transaction detail at row "+lnRow+" without replace description.");
-                            loJSON.put("reverse", true);
-                            loJSON.put("row", lnCtr);
-                            return loJSON;
+                        if((Detail(lnCtr).getReplaceId() == null || "".equals(Detail(lnCtr).getReplaceId()))){
+                            if(Detail(lnCtr).isReverse()){
+                                loJSON.put("result", "error");
+                                loJSON.put("message", "Item Description already exists in the transaction detail at row "+lnRow+" without replace description.");
+                                loJSON.put("reverse", true);
+                                loJSON.put("row", lnCtr);
+                                System.out.println("ROW : " + loJSON.put("row", lnCtr));
+                                return loJSON;
+                            } else {
+                                loJSON.put("result", "error");
+                                loJSON.put("reverse", false);
+                                loJSON.put("row", lnCtr);
+                                System.out.println("ROW : " + loJSON.put("row", lnCtr));
+                                return loJSON;
+                            }
                         } else {
-                            loJSON.put("result", "error");
-                            loJSON.put("reverse", false);
-                            loJSON.put("row", lnCtr);
-                            return loJSON;
+                            if(!Detail(lnCtr).isReverse()){
+                                loJSON.put("result", "error");
+                                loJSON.put("reverse", false);
+                                loJSON.put("row", lnCtr);
+                                System.out.println("ROW : " + loJSON.put("row", lnCtr));
+                                return loJSON;
+                            }
                         }
                     }
                 }    
@@ -1057,9 +1113,9 @@ public class POQuotation extends Transaction {
 //            ldblTransactionTotal = ldblVatSales + ldblVatAmount;
         //}
 
-        System.out.println("Vat Sales " + ldblTransactionTotal);
-        System.out.println("Vat Amount " + ldblVatAmount);
-        System.out.println("Vat Exempt " + ldblVatExempt);
+//        System.out.println("Vat Sales " + ldblTransactionTotal);
+//        System.out.println("Vat Amount " + ldblVatAmount);
+//        System.out.println("Vat Exempt " + ldblVatExempt);
 
         poJSON = Master().setTransactionTotal(ldblTransactionTotal);
         poJSON = Master().setVatAmount(ldblVatAmount);
@@ -1089,6 +1145,24 @@ public class POQuotation extends Transaction {
         }
         //Cost = (Unit Price - (Discount Rate + Additional Discount) * Quantity)
         return ldblDetailDiscountRate + Detail(row).getDiscountAmount();
+    }
+    
+    public JSONObject computeCost(int row, double discountRate, double discount){
+        poJSON = new JSONObject();
+        
+        Double ldblDetailDiscountRate = 0.00;
+        if(discountRate > 0){
+            ldblDetailDiscountRate = Detail(row).getUnitPrice() * (discountRate / 100);
+        }
+        if((Detail(row).getUnitPrice() - (ldblDetailDiscountRate + discount)) *  Detail(row).getQuantity() < 0.0000){
+            poJSON.put("result", "error");
+            poJSON.put("message", "Invalid computed cost amount.");
+            return poJSON;
+        }
+        
+        poJSON.put("result", "success");
+        poJSON.put("message", "success");
+        return poJSON;
     }
     
     public JSONObject computeDiscount(double discount) {
@@ -1391,7 +1465,7 @@ public class POQuotation extends Transaction {
             Master().setSourceCode(object.getSourceCode());
             Master().setCompanyId(POQuotationRequestSupplierList(row).getCompanyId());
             Master().setBranchCode(object.Master().getBranchCode());
-            Master().setValidityDate(object.Master().getExpectedPurchaseDate());
+//            Master().setValidityDate(object.Master().getExpectedPurchaseDate());
             
             for(int lnCtr = 0; lnCtr <= object.getDetailCount()-1; lnCtr++){
                 if(object.Detail(lnCtr).isReverse()){
@@ -1737,36 +1811,98 @@ public class POQuotation extends Transaction {
         }
         
         String lsQuantity = "0.00";
-        boolean lbReqDescription, lbReqStockID, lbReplaceID, lbReplaceDesc; 
+        int lnCount = 0;
+        boolean lbReqItem, lbReqDescription, lbReqStockID, lbReplaceID, lbReplaceDesc; 
+        boolean lbCheck = false;
         Iterator<Model> detail = Detail().iterator();
+        
+        //check if there is not empty replacement if true all request description must have a replacement description value
+        for(int lnCtr = 0; lnCtr <= getDetailCount()-1; lnCtr++){
+            lbReplaceID = (Detail(lnCtr).getReplaceId() == null || "".equals(Detail(lnCtr).getReplaceId()));
+            lbReplaceDesc = (Detail(lnCtr).getReplaceDescription() == null || "".equals(Detail(lnCtr).getReplaceDescription()));
+            
+            if(validateReplacement(Detail(lnCtr).getDescription())){
+                if(lbReplaceID || lbReplaceDesc){
+                    poJSON.put("result", "error");
+                    poJSON.put("message", "Found request description <"+Detail(lnCtr).getDescription()+"> with matching replacement.\n\nReplacement Description for row "+(lnCtr+1)+" must not be empty." );
+                    return poJSON;
+                    
+                }
+            }
+        }
+           
         while (detail.hasNext()) {
             Model item = detail.next();
             if(item.getValue("nQuantity") != null && !"".equals(item.getValue("nQuantity"))){
                 lsQuantity = item.getValue("nQuantity").toString();
             }
-            
             lbReqDescription = (item.getValue("sDescript") == null || "".equals(item.getValue("sDescript")));
             lbReqStockID = (item.getValue("sStockIDx") == null || "".equals(item.getValue("sStockIDx")));
             lbReplaceID = (item.getValue("sReplacID") == null || "".equals(item.getValue("sReplacID")));
             lbReplaceDesc = (item.getValue("sReplacDs") == null || "".equals(item.getValue("sReplacDs")));
+            lbReqItem = RequestMultipleItem((String) item.getValue("sDescript"));
             
-            if ( (lbReqDescription && lbReqStockID && lbReplaceID && lbReplaceDesc)
-                  || (Double.valueOf(lsQuantity) <= 0.00)) {
+            if(lbReqDescription){
                 if (item.getEditMode() == EditMode.ADDNEW) {
-                    if(item.getValue("sDescript") != null && !"".equals(item.getValue("sDescript"))
-                        && Double.valueOf(lsQuantity) <= 0.00){
-                        item.setValue("cReversex", POQuotationStatus.Reverse.EXCLUDE);
-                    } else {
-                        detail.remove();
-                    }
+                    detail.remove();
+                    continue;
                 } else {
-                    paDetailRemoved.add(item);
-                    item.setValue("cReversex", POQuotationStatus.Reverse.EXCLUDE);
+                    poJSON.put("result", "error");
+                    poJSON.put("message", "Request description cannot be empty.\nContact system administrator for assistance.");
+                    return poJSON;
+                }
+            } else {
+                if (item.getEditMode() == EditMode.ADDNEW) {
+                    if(Double.valueOf(lsQuantity) <= 0.00){
+                        if(lbReqItem){
+                            detail.remove();
+                            continue;
+                        } else {
+                            item.setValue("cReversex", POQuotationStatus.Reverse.EXCLUDE);
+                        }
+                    } 
+                } else {
+                    if(Double.valueOf(lsQuantity) <= 0.00){
+                        item.setValue("cReversex", POQuotationStatus.Reverse.EXCLUDE);
+                    }
                 }
             }
             
-            lbReqDescription = false;lbReqStockID = false;lbReplaceID = false;lbReplaceDesc = false;
+            lbReqDescription = false;lbReqStockID = false;lbReplaceID = false;lbReplaceDesc = false;lbReqItem=false;
+            lsQuantity = "0.00";
         }
+        
+//        String lsQuantity = "0.00";
+//        boolean lbReqDescription, lbReqStockID, lbReplaceID, lbReplaceDesc; 
+//        Iterator<Model> detail = Detail().iterator();
+//        while (detail.hasNext()) {
+//            Model item = detail.next();
+//            if(item.getValue("nQuantity") != null && !"".equals(item.getValue("nQuantity"))){
+//                lsQuantity = item.getValue("nQuantity").toString();
+//            }
+//            
+//            lbReqDescription = (item.getValue("sDescript") == null || "".equals(item.getValue("sDescript")));
+//            lbReqStockID = (item.getValue("sStockIDx") == null || "".equals(item.getValue("sStockIDx")));
+//            lbReplaceID = (item.getValue("sReplacID") == null || "".equals(item.getValue("sReplacID")));
+//            lbReplaceDesc = (item.getValue("sReplacDs") == null || "".equals(item.getValue("sReplacDs")));
+//            
+//            if ( (lbReqDescription && lbReqStockID && lbReplaceID && lbReplaceDesc)
+//                  || (Double.valueOf(lsQuantity) <= 0.00)) {
+//                if (item.getEditMode() == EditMode.ADDNEW) {
+//                    if(item.getValue("sDescript") != null && !"".equals(item.getValue("sDescript"))
+//                        && Double.valueOf(lsQuantity) <= 0.00){
+//                        item.setValue("cReversex", POQuotationStatus.Reverse.EXCLUDE);
+//                    } else {
+//                        detail.remove();
+//                    }
+//                } else {
+//                    paDetailRemoved.add(item);
+//                    item.setValue("cReversex", POQuotationStatus.Reverse.EXCLUDE);
+//                }
+//            }
+//            
+//            lbReqDescription = false;lbReqStockID = false;lbReplaceID = false;lbReplaceDesc = false;
+//        }
 
         //Validate detail after removing all zero qty and empty stock Id
         if (getDetailCount() <= 0) {
@@ -1907,8 +2043,8 @@ public class POQuotation extends Transaction {
                     + "  LEFT JOIN branch c ON c.sBranchCd = a.sBranchCd            "
                     + "  LEFT JOIN company d ON d.sCompnyID = a.sCompnyID           "
                     + "  LEFT JOIN category e ON e.sCategrCd = a.sCategrCd          "
-                    + "  LEFT JOIN category_level2 f ON f.sCategrCd = a.sCategrCd   "
                     + "  LEFT JOIN po_quotation_request_master g ON g.sTransNox = a.sSourceNo "
+                    + "  LEFT JOIN category_level2 f ON f.sCategrCd = g.sCategCd2   "
                     + "  LEFT JOIN department h ON h.sDeptIDxx = g.sDeptIDxx        "
                     + "  LEFT JOIN client_master i ON i.sClientID = a.sSupplier     ";
         
