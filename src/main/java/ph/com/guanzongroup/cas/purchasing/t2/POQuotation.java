@@ -695,7 +695,6 @@ public class POQuotation extends Transaction {
             poJSON.put("message", "No record loaded.");
         }
         
-        
         poJSON.put("row", row);
         return poJSON;
     }
@@ -1073,15 +1072,17 @@ public class POQuotation extends Transaction {
         Double ldblDetailTotal = 0.0000;
         
         for (int lnCtr = 0; lnCtr <= getDetailCount() - 1; lnCtr++) {
-            if(Detail(lnCtr).getDiscountRate() > 0){
-                ldblDetailDiscountRate = Detail(lnCtr).getUnitPrice() * (Detail(lnCtr).getDiscountRate() / 100);
+            if(Detail(lnCtr).isReverse()){
+                if(Detail(lnCtr).getDiscountRate() > 0){
+                    ldblDetailDiscountRate = Detail(lnCtr).getUnitPrice() * (Detail(lnCtr).getDiscountRate() / 100);
+                }
+                //Cost = (Unit Price - (Discount Rate + Additional Discount) * Quantity)
+                ldblDetailTotal = (Detail(lnCtr).getUnitPrice() - (ldblDetailDiscountRate + Detail(lnCtr).getDiscountAmount())) *  Detail(lnCtr).getQuantity();
+                ldblTotal = ldblTotal + ldblDetailTotal;
+
+                ldblDetailTotal = 0.0000;
+                ldblDetailDiscountRate = 0.00;
             }
-            //Cost = (Unit Price - (Discount Rate + Additional Discount) * Quantity)
-            ldblDetailTotal = (Detail(lnCtr).getUnitPrice() - (ldblDetailDiscountRate + Detail(lnCtr).getDiscountAmount())) *  Detail(lnCtr).getQuantity();
-            ldblTotal = ldblTotal + ldblDetailTotal;
-            
-            ldblDetailTotal = 0.0000;
-            ldblDetailDiscountRate = 0.00;
         }
         
         poJSON = Master().setGrossAmount(ldblTotal);
@@ -1822,7 +1823,7 @@ public class POQuotation extends Transaction {
             lbReplaceDesc = (Detail(lnCtr).getReplaceDescription() == null || "".equals(Detail(lnCtr).getReplaceDescription()));
             
             if(validateReplacement(Detail(lnCtr).getDescription())){
-                if(lbReplaceID || lbReplaceDesc){
+                if((lbReplaceID || lbReplaceDesc) && Detail(lnCtr).isReverse()){ 
                     poJSON.put("result", "error");
                     poJSON.put("message", "Found request description <"+Detail(lnCtr).getDescription()+"> with matching replacement.\n\nReplacement Description for row "+(lnCtr+1)+" must not be empty." );
                     return poJSON;
