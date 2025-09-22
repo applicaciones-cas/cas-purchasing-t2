@@ -1381,7 +1381,7 @@ public class POQuotation extends Transaction {
                     + " AND a.cReversex = "+SQLUtil.toSQL(POQuotationRequestStatus.Reverse.INCLUDE)
                     + " AND a.sTransNox NOT IN (SELECT q.sSourceNo FROM po_quotation_master q "
                             + " WHERE q.sSourceNo = a.sTransNox AND q.sCompnyID = a.sCompnyID AND q.sSupplier = a.sSupplier "
-                            + " AND (q.cTranStat != "+POQuotationStatus.CANCELLED+" AND q.cTranStat != "+POQuotationStatus.VOID+")) "
+                            + " AND (q.cTranStat != "+SQLUtil.toSQL(POQuotationStatus.CANCELLED) +" AND q.cTranStat != "+SQLUtil.toSQL(POQuotationStatus.VOID)+")) "
             );
 
             lsSQL = lsSQL + " ORDER BY b.dTransact DESC ";
@@ -1447,9 +1447,62 @@ public class POQuotation extends Transaction {
         return poJSON;
     }
     
+    
+    //Validate
+    private JSONObject checkExistingQuotation(int row, boolean isPopulate) throws SQLException, GuanzonException{
+        poJSON = new JSONObject();
+        String lsSourceNo, lsSupplierId, lsCompanyId;
+        if(isPopulate){
+            lsSourceNo = POQuotationRequestSupplierList(row).getTransactionNo();
+            lsSupplierId = POQuotationRequestSupplierList(row).getSupplierId();
+            lsCompanyId = POQuotationRequestSupplierList(row).getCompanyId();
+        } else {
+            lsSourceNo = Master().getSourceNo();
+            lsSupplierId = Master().getSupplierId();
+            lsCompanyId = Master().getCompanyId();
+        }
+        
+        initSQL();
+        String lsSQL = MiscUtil.addCondition(SQL_BROWSE, 
+                  " a.sIndstCdx = " + SQLUtil.toSQL(psIndustryId)
+                + " AND a.sCategrCd = " + SQLUtil.toSQL(psCategorCd)
+                + " AND a.sSourceNo = " + SQLUtil.toSQL(lsSourceNo) 
+                + " AND a.sSupplier = " + SQLUtil.toSQL(lsSupplierId) 
+                + " AND a.sCompnyID = " + SQLUtil.toSQL(lsCompanyId) 
+                + " AND a.cTranStat != " + SQLUtil.toSQL(POQuotationStatus.CANCELLED)
+                + " AND a.cTranStat != " + SQLUtil.toSQL(POQuotationStatus.VOID)
+                );
+        
+        System.out.println("Executing SQL: " + lsSQL);
+        ResultSet loRS = poGRider.executeQuery(lsSQL);
+        poJSON = new JSONObject();
+
+        if (MiscUtil.RecordCount(loRS) >= 0) {
+            if (loRS.next()) {
+                poJSON.put("result", "error");
+                poJSON.put("message", "Quotation request already have existing quotation <"+loRS.getString("sTransNox")+">.");
+            }
+        } else {
+            poJSON.put("result", "success");
+            poJSON.put("continue", true);
+            poJSON.put("message", "No record found.");
+        }
+        MiscUtil.close(loRS);
+        
+        return poJSON;
+    }
+    
     public JSONObject populatePOQuotation(int row) {
         poJSON = new JSONObject();
         try {
+            
+//            if(!POQuotationRequestSupplierList(row).getTransactionNo().equals(Master().getSourceNo())){
+//                resetTransaction();
+//            }
+            poJSON = checkExistingQuotation(row, true);
+            if ("error".equals((String) poJSON.get("result"))) {
+                return poJSON;
+            }
             
             POQuotationRequest object = new QuotationControllers(poGRider, logwrapr).POQuotationRequest();
             object.InitTransaction();
@@ -1766,6 +1819,12 @@ public class POQuotation extends Transaction {
             CloneNotSupportedException {
         /*Put system validations and other assignments here*/
         poJSON = new JSONObject();
+        
+        poJSON = checkExistingQuotation(0, false);
+        if ("error".equals((String) poJSON.get("result"))) {
+            return poJSON;
+        }
+        
         if (POQuotationStatus.CONFIRMED.equals(Master().getTransactionStatus())) {
             if (poGRider.getUserLevel() <= UserRight.ENCODER) {
                 poJSON = ShowDialogFX.getUserApproval(poGRider);
