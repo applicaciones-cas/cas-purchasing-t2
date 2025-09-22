@@ -170,12 +170,12 @@ public class POQuotation_Vehicle implements GValidator{
         }
         if(poMaster.getGrossAmount() <= 0.0000){
             poJSON.put("result","error"); 
-            poJSON.put("message", "Invalid gross amount.");
+            poJSON.put("message", "Invalid transaction total.");
             return poJSON;
         }
         if(poMaster.getTransactionTotal()<= 0.0000){
             poJSON.put("result","error"); 
-            poJSON.put("message", "Invalid transaction total.");
+            poJSON.put("message", "Invalid net total.");
             return poJSON;
         }
         if (poMaster.getPrepared()== null || "".equals(poMaster.getPrepared())) {

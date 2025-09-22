@@ -1766,8 +1766,6 @@ public class POQuotation extends Transaction {
             CloneNotSupportedException {
         /*Put system validations and other assignments here*/
         poJSON = new JSONObject();
-        computeFields();
-        
         if (POQuotationStatus.CONFIRMED.equals(Master().getTransactionStatus())) {
             if (poGRider.getUserLevel() <= UserRight.ENCODER) {
                 poJSON = ShowDialogFX.getUserApproval(poGRider);
@@ -1800,6 +1798,7 @@ public class POQuotation extends Transaction {
         //Check detail
         boolean lbWillDelete = true;
         for(int lnCtr = 0; lnCtr <= getDetailCount()-1; lnCtr++){
+            System.out.println("Detail Discount Rate: " + Detail(lnCtr).getDiscountRate());
             if ((Detail(lnCtr).getQuantity() > 0.00) && Detail(lnCtr).isReverse() ) {
                 lbWillDelete = false;
             }
@@ -1923,6 +1922,9 @@ public class POQuotation extends Transaction {
             TransactionAttachmentList(lnCtr).getModel().setSourceNo(Master().getTransactionNo());
             TransactionAttachmentList(lnCtr).getModel().setSourceCode(getSourceCode());
         }
+        
+        //Recompute amount
+        computeFields();
         
         poJSON.put("result", "success");
         return poJSON;
