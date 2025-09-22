@@ -7,6 +7,8 @@ package ph.com.guanzongroup.cas.purchasing.t2.model;
 
 import java.sql.SQLException;
 import java.util.Date;
+import java.util.logging.Level;
+import java.util.logging.Logger;
 import org.guanzon.appdriver.agent.services.Model;
 import org.guanzon.appdriver.base.GuanzonException;
 import org.guanzon.appdriver.base.MiscUtil;
@@ -196,6 +198,14 @@ public class Model_PO_Quotation_Master extends Model {
     }
     
     public JSONObject setValidityDate(Date validityDate) {
+        if(validityDate == null){
+            try {
+                poEntity.updateNull("dValidity");
+                return null;
+            } catch (SQLException ex) {
+                Logger.getLogger(getClass().getName()).log(Level.SEVERE, null, ex);
+            }
+        }
         return setValue("dValidity", validityDate);
     }
 
