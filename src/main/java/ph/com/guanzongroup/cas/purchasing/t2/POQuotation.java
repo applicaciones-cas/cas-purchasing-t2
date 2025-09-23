@@ -1529,8 +1529,11 @@ public class POQuotation extends Transaction {
                 + " AND a.sSourceNo = " + SQLUtil.toSQL(lsSourceNo) 
                 + " AND a.sSupplier = " + SQLUtil.toSQL(lsSupplierId) 
                 + " AND a.sCompnyID = " + SQLUtil.toSQL(lsCompanyId) 
-                + " AND a.cTranStat != " + SQLUtil.toSQL(POQuotationStatus.CANCELLED)
-                + " AND a.cTranStat != " + SQLUtil.toSQL(POQuotationStatus.VOID)
+                + " AND a.sTransNox != " + SQLUtil.toSQL(Master().getTransactionNo())
+                + " AND ( a.cTranStat = " + SQLUtil.toSQL(POQuotationStatus.OPEN)
+                + " OR a.cTranStat = " + SQLUtil.toSQL(POQuotationStatus.CONFIRMED)
+                + " OR a.cTranStat = " + SQLUtil.toSQL(POQuotationStatus.APPROVED)
+                + " ) "
                 );
         
         System.out.println("Executing SQL: " + lsSQL);
