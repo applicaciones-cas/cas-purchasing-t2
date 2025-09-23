@@ -1808,15 +1808,28 @@ public class POQuotationRequest extends Transaction {
         System.out.println("------------------------------------------------------------------------------");
         
         poJSON.put("result", "success");
-        poJSON.put("message", "Export complete.");
+        poJSON.put("message", "Export complete. \n\nCheck folder located in\""+System.getProperty("sys.default.path.temp")+"\"Export folder.");
         return poJSON;
     }
     public JSONObject exportFile(int POQuotationRequestSupplierRow){
         poJSON = new JSONObject();
-        String lsExportPath = System.getProperty("sys.default.path.temp") + "/export";
+        String lsExportPath = System.getProperty("sys.default.path.temp") + "/Export";
         String lsReportPath = System.getProperty("sys.default.path.config") + "/Reports/POQuotationRequest.jrxml";
         String lsWaterMarkPath = System.getProperty("sys.default.path.config") + "/Reports//images/approved.png";
         try {
+            
+            File folder = new File(lsExportPath);
+            if (!folder.exists()) {
+                if (folder.mkdirs()) {
+                    // Folder successfully created
+                    System.out.println("Folder created at: " + folder.getAbsolutePath());
+                } else {
+                    // Failed to create folder
+                    poJSON.put("result", "error");
+                    poJSON.put("message", "Failed to create folder. \n\nEnsure the application has write permissions to \"" + System.getProperty("sys.default.path.temp") + "\"Export");
+                    return poJSON;
+                }
+            }
             
             // 1. Prepare parameters
             Map<String, Object> parameters = new HashMap<>();
@@ -1849,7 +1862,7 @@ public class POQuotationRequest extends Transaction {
             if (file.exists()) {
             } else {
                 poJSON.put("result", "error");
-                poJSON.put("message", "Jasper file does not exist. \nEnsure the file is located in \""+System.getProperty("sys.default.path.config")+"\"Reports");
+                poJSON.put("message", "Jasper file does not exist. \n\nEnsure the file is located in \""+System.getProperty("sys.default.path.config")+"\"Reports");
                 return poJSON;
             }
 
