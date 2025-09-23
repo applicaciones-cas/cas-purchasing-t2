@@ -1210,12 +1210,25 @@ public class POQuotation extends Transaction {
     
     public JSONObject computeCost(int row, double discountRate, double discount){
         poJSON = new JSONObject();
-        
         Double ldblDetailDiscountRate = 0.00;
         if(discountRate > 0){
             ldblDetailDiscountRate = Detail(row).getUnitPrice() * (discountRate / 100);
         }
-        if((Detail(row).getUnitPrice() - (ldblDetailDiscountRate + discount)) *  Detail(row).getQuantity() < 0.0000){
+        
+        if(discountRate > 0.00 && Detail(row).getUnitPrice() <= 0.0000){
+            poJSON.put("result", "error");
+            poJSON.put("message", "Invalid discount rate.");
+            return poJSON;
+        }
+        
+        Double ldblDetailTotalDiscount = ldblDetailDiscountRate + discount;
+        if(ldblDetailTotalDiscount > Detail(row).getUnitPrice()){
+            poJSON.put("result", "error");
+            poJSON.put("message", "Invalid discount.");
+            return poJSON;
+        }
+        
+        if((Detail(row).getUnitPrice() - ldblDetailTotalDiscount) *  Detail(row).getQuantity() < 0.0000){
             poJSON.put("result", "error");
             poJSON.put("message", "Invalid computed cost amount.");
             return poJSON;
@@ -1530,9 +1543,8 @@ public class POQuotation extends Transaction {
                 + " AND a.sSupplier = " + SQLUtil.toSQL(lsSupplierId) 
                 + " AND a.sCompnyID = " + SQLUtil.toSQL(lsCompanyId) 
                 + " AND a.sTransNox != " + SQLUtil.toSQL(Master().getTransactionNo())
-                + " AND ( a.cTranStat = " + SQLUtil.toSQL(POQuotationStatus.OPEN)
-                + " OR a.cTranStat = " + SQLUtil.toSQL(POQuotationStatus.CONFIRMED)
-                + " OR a.cTranStat = " + SQLUtil.toSQL(POQuotationStatus.APPROVED)
+                + " AND NOT ( a.cTranStat = " + SQLUtil.toSQL(POQuotationStatus.CANCELLED)
+                + " OR a.cTranStat = " + SQLUtil.toSQL(POQuotationStatus.VOID)
                 + " ) "
                 );
         
@@ -1543,7 +1555,7 @@ public class POQuotation extends Transaction {
         if (MiscUtil.RecordCount(loRS) >= 0) {
             if (loRS.next()) {
                 poJSON.put("result", "error");
-                poJSON.put("message", "Quotation request already have existing quotation <"+loRS.getString("sTransNox")+">.");
+                poJSON.put("message", "The selected quotation request already has an existing quotation <"+loRS.getString("sTransNox")+">.");
             }
         } else {
             poJSON.put("result", "success");
