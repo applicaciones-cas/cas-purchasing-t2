@@ -5,10 +5,6 @@
  */
 package ph.com.guanzongroup.cas.purchasing.t2;
 
-import java.awt.Component;
-import java.awt.Container;
-import java.awt.event.ActionListener;
-import java.awt.event.WindowAdapter;
 import java.io.File;
 import java.sql.ResultSet;
 import java.sql.SQLException;
@@ -23,30 +19,20 @@ import java.util.List;
 import java.util.Map;
 import java.util.logging.Level;
 import java.util.logging.Logger;
-import javafx.application.Platform;
-import javax.swing.JButton;
-import javax.swing.SwingUtilities;
-import javax.swing.WindowConstants;
 import net.sf.jasperreports.engine.JRException;
 import net.sf.jasperreports.engine.JasperCompileManager;
 import net.sf.jasperreports.engine.JasperExportManager;
 import net.sf.jasperreports.engine.JasperFillManager;
 import net.sf.jasperreports.engine.JasperPrint;
-import net.sf.jasperreports.engine.JasperPrintManager;
 import net.sf.jasperreports.engine.JasperReport;
 import net.sf.jasperreports.engine.data.JRBeanCollectionDataSource;
-import net.sf.jasperreports.swing.JRViewer;
-import net.sf.jasperreports.swing.JRViewerToolbar;
-import net.sf.jasperreports.view.JasperViewer;
 import org.guanzon.appdriver.agent.ShowDialogFX;
-import org.guanzon.appdriver.agent.ShowMessageFX;
 import org.guanzon.appdriver.agent.services.Model;
 import org.guanzon.appdriver.agent.services.Transaction;
 import org.guanzon.appdriver.base.GuanzonException;
 import org.guanzon.appdriver.base.MiscUtil;
 import org.guanzon.appdriver.base.SQLUtil;
 import org.guanzon.appdriver.constant.EditMode;
-import org.guanzon.appdriver.constant.Logical;
 import org.guanzon.appdriver.constant.RecordStatus;
 import org.guanzon.appdriver.constant.UserRight;
 import org.guanzon.appdriver.iface.GValidator;
@@ -62,7 +48,6 @@ import org.guanzon.cas.parameter.Department;
 import org.guanzon.cas.parameter.ModelVariant;
 import org.guanzon.cas.parameter.Term;
 import org.guanzon.cas.parameter.services.ParamControllers;
-import org.guanzon.cas.parameter.services.ParamModels;
 import org.json.simple.JSONObject;
 import org.json.simple.parser.ParseException;
 import ph.com.guanzongroup.cas.purchasing.t2.model.Model_PO_Quotation_Request_Detail;
@@ -1427,7 +1412,7 @@ public class POQuotationRequest extends Transaction {
                 detail.remove();
             } else {
                 paDetailRemoved.add(item);
-                item.setValue("cReversex", "0");
+                item.setValue("cReversex", POQuotationRequestStatus.Reverse.EXCLUDE);
             }
         }
 
@@ -1447,7 +1432,7 @@ public class POQuotationRequest extends Transaction {
                     detail.remove();
                 } else {
                     paDetailRemoved.add(item);
-                    item.setValue("cReversex", "0");
+                    item.setValue("cReversex", POQuotationRequestStatus.Reverse.EXCLUDE);
                 }
             }
         }
@@ -1623,7 +1608,7 @@ public class POQuotationRequest extends Transaction {
                     detail.remove();
                 } else {
                     paDetailRemoved.add(item);
-                    item.setValue("cReversex", "0");
+                    item.setValue("cReversex", POQuotationRequestStatus.Reverse.EXCLUDE);
                 }
 
             }
@@ -1808,15 +1793,28 @@ public class POQuotationRequest extends Transaction {
         System.out.println("------------------------------------------------------------------------------");
         
         poJSON.put("result", "success");
-        poJSON.put("message", "Export complete.");
+        poJSON.put("message", "Export complete. \n\nCheck folder located in\""+System.getProperty("sys.default.path.temp")+"\"Export folder.");
         return poJSON;
     }
     public JSONObject exportFile(int POQuotationRequestSupplierRow){
         poJSON = new JSONObject();
-        String lsExportPath = System.getProperty("sys.default.path.temp") + "/export";
+        String lsExportPath = System.getProperty("sys.default.path.temp") + "/Export";
         String lsReportPath = System.getProperty("sys.default.path.config") + "/Reports/POQuotationRequest.jrxml";
         String lsWaterMarkPath = System.getProperty("sys.default.path.config") + "/Reports//images/approved.png";
         try {
+            
+            File folder = new File(lsExportPath);
+            if (!folder.exists()) {
+                if (folder.mkdirs()) {
+                    // Folder successfully created
+                    System.out.println("Folder created at: " + folder.getAbsolutePath());
+                } else {
+                    // Failed to create folder
+                    poJSON.put("result", "error");
+                    poJSON.put("message", "Failed to create folder. \n\nEnsure the application has write permissions to \"" + System.getProperty("sys.default.path.temp") + "\"Export");
+                    return poJSON;
+                }
+            }
             
             // 1. Prepare parameters
             Map<String, Object> parameters = new HashMap<>();
@@ -1849,7 +1847,7 @@ public class POQuotationRequest extends Transaction {
             if (file.exists()) {
             } else {
                 poJSON.put("result", "error");
-                poJSON.put("message", "Jasper file does not exist. \nEnsure the file is located in \""+System.getProperty("sys.default.path.config")+"\"Reports");
+                poJSON.put("message", "Jasper file does not exist. \n\nEnsure the file is located in \""+System.getProperty("sys.default.path.config")+"\"Reports");
                 return poJSON;
             }
 

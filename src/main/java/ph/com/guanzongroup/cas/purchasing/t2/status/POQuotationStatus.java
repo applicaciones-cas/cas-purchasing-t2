@@ -12,9 +12,15 @@ package ph.com.guanzongroup.cas.purchasing.t2.status;
 public class POQuotationStatus {
     public static final String OPEN = "0";
     public static final  String CONFIRMED = "1";
-    public static final  String POSTED = "2"; 
+    public static final  String APPROVED = "2"; 
     public static final  String CANCELLED = "3";
     public static final  String VOID = "4";
-    public static final  String DISAPPROVED = "5"; 
+    
+    //0 as new entry, 1 = confirmed, 2 = approved, 3 = cancelled, 4 = Void
+    
+    public static class Reverse  {
+        public static final  String INCLUDE = "+"; 
+        public static final  String EXCLUDE = "-"; 
+    }
     
 }

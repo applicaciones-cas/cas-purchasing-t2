@@ -42,12 +42,12 @@ public class testPOQuotation {
 //    @Test
     public void testNewTransaction() {
         String branchCd = instance.getBranchCode();
-        String industryId = "05";
-        String companyId = "0003";
+        String industryId = "03";
+        String companyId = "0004";
         String categoryId = "0007";
         String category2 = "0022";
         String remarks = "this is a test Class 4.";
-        String sourceNo = "A00125000002";
+        String sourceNo = "A00125000015";
         String sourceCode = "POQR";
         String supplierId = "V00125000003";
         String term = "0000003";
@@ -101,13 +101,10 @@ public class testPOQuotation {
                 poController.Master().setGrossAmount(5000.00);
                 poController.Master().setTransactionTotal(5000.00);
 
-                poController.Detail(0).setStockId("M00125000017");
+                poController.Detail(0).setStockId("P0W125000008");
                 poController.Detail(0).setDescription("General Asset Model1");
                 poController.Detail(0).setQuantity(4.00);
                 poController.AddDetail();
-                poController.Detail(1).setStockId("M00125000018");
-                poController.Detail(1).setDescription("General Asset Model2");
-                poController.Detail(1).setQuantity(1.00);
 
                 System.out.println("Industry ID : " + instance.getIndustry());
                 System.out.println("Industry : " + poController.Master().Industry().getDescription());
@@ -139,7 +136,7 @@ public class testPOQuotation {
         }
     }
 
-//    @Test
+    @Test
     public void testUpdateTransaction() {
         JSONObject loJSON;
 
@@ -150,7 +147,7 @@ public class testPOQuotation {
                 Assert.fail();
             }
 
-            loJSON = poController.OpenTransaction("A00125000001");
+            loJSON = poController.OpenTransaction("A00125000002");
             if (!"success".equals((String) loJSON.get("result"))) {
                 System.err.println((String) loJSON.get("message"));
                 Assert.fail();
@@ -163,6 +160,14 @@ public class testPOQuotation {
             }
             
             //Update fields
+            poController.Detail(0).setUnitPrice(1000.00);
+            poController.Detail(0).setDiscountRate(0.10);
+            poController.Detail(0).setDiscountAmount(50.00);
+            poController.Master().isVatable(false);
+            poController.Master().setDiscountRate(0.00);
+            poController.Master().setAdditionalDiscountAmount(0.0000);
+            poController.Master().setFreightAmount(100.00);
+            poController.computeFields();
             
             loJSON = poController.SaveTransaction();
             if (!"success".equals((String) loJSON.get("result"))) {
@@ -252,7 +257,6 @@ public class testPOQuotation {
                 System.out.println("Transaction No ->> " + poController.POQuotationList(lnCtr).getTransactionNo());
                 System.out.println("Transaction Date ->> " + poController.POQuotationList(lnCtr).getTransactionDate());
                 System.out.println("Branch ->> " + poController.POQuotationList(lnCtr).Branch().getBranchName());
-                System.out.println("Category ->> " + poController.POQuotationList(lnCtr).Category2().getDescription());
                 System.out.println("----------------------------------------------------------------------------------");
             } catch (SQLException | GuanzonException ex) {
                 Logger.getLogger(getClass().getName()).log(Level.SEVERE, null, ex);
@@ -489,7 +493,7 @@ public class testPOQuotation {
                 }
             }
             
-            loJSON = poController.PostTransaction("test post");
+            loJSON = poController.ApproveTransaction("test post");
             if (!"success".equals((String) loJSON.get("result"))){
                 System.err.println((String) loJSON.get("message"));
                 Assert.fail();

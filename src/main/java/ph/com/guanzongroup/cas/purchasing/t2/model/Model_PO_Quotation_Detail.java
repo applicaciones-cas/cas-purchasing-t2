@@ -19,7 +19,6 @@ import org.guanzon.cas.parameter.model.Model_Category_Level2;
 import org.guanzon.cas.parameter.model.Model_Color;
 import org.guanzon.cas.parameter.model.Model_Model;
 import org.guanzon.cas.parameter.model.Model_Model_Variant;
-import org.guanzon.cas.parameter.services.ParamModels;
 import org.json.simple.JSONObject;
 
 /**
@@ -69,12 +68,6 @@ public class Model_PO_Quotation_Detail extends Model {
             ID2 = "nEntryNox";
 
             //initialize reference objects
-//            ParamModels model = new ParamModels(poGRider);
-//            poBrand = model.Brand();
-//            poModel = model.Model();
-//            poColor = model.Color();
-//            poModelVariant = model.ModelVariant();
-//            poCategory = model.Category2();
             
             InvModels invModel = new InvModels(poGRider); 
             poInventory = invModel.Inventory();

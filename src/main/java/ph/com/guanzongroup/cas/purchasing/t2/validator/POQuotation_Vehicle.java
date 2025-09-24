@@ -68,9 +68,7 @@ public class POQuotation_Vehicle implements GValidator{
                     return validateNew();
                 case POQuotationStatus.CONFIRMED:
                     return validateConfirmed();
-                case POQuotationStatus.DISAPPROVED:
-                    return validateDisApproved();
-                case POQuotationStatus.POSTED:
+                case POQuotationStatus.APPROVED:
                     return validatePosted();
                 case POQuotationStatus.CANCELLED:
                     return validateCancelled();
@@ -91,16 +89,11 @@ public class POQuotation_Vehicle implements GValidator{
         poJSON = new JSONObject();
         Date loTransactionDate = poMaster.getTransactionDate();
         Date loValidityDate = poMaster.getValidityDate();
-        Date loReferenceDate = poMaster.getValidityDate();
+        Date loReferenceDate = poMaster.getReferenceDate();
         LocalDate serverDate = strToDate(xsDateShort(poGRider.getServerDate()));
         LocalDate oneYearAgo = serverDate.minusYears(1);
         
         if (loTransactionDate == null) {
-            poJSON.put("message", "Invalid Transaction Date.");
-            return poJSON;
-        }
-
-        if ("1900-01-01".equals(xsDateShort(loTransactionDate))) {
             poJSON.put("message", "Invalid Transaction Date.");
             return poJSON;
         }
@@ -110,12 +103,22 @@ public class POQuotation_Vehicle implements GValidator{
             return poJSON;
         }
 
-        if ("1900-01-01".equals(xsDateShort(loReferenceDate))) {
+        if (loReferenceDate == null) {
             poJSON.put("message", "Invalid Reference Date.");
             return poJSON;
         }
+
+        if ("1900-01-01".equals(xsDateShort(loTransactionDate))) {
+            poJSON.put("message", "Invalid Transaction Date.");
+            return poJSON;
+        }
         
-        if (loReferenceDate == null) {
+        if ("1900-01-01".equals(xsDateShort(loValidityDate))) {
+            poJSON.put("message", "Invalid Validity Date.");
+            return poJSON;
+        }
+        
+        if ("1900-01-01".equals(xsDateShort(loReferenceDate))) {
             poJSON.put("message", "Invalid Reference Date.");
             return poJSON;
         }
@@ -167,12 +170,12 @@ public class POQuotation_Vehicle implements GValidator{
         }
         if(poMaster.getGrossAmount() <= 0.0000){
             poJSON.put("result","error"); 
-            poJSON.put("message", "Invalid gross amount.");
+            poJSON.put("message", "Invalid transaction total.");
             return poJSON;
         }
         if(poMaster.getTransactionTotal()<= 0.0000){
             poJSON.put("result","error"); 
-            poJSON.put("message", "Invalid transaction total.");
+            poJSON.put("message", "Invalid net total.");
             return poJSON;
         }
         if (poMaster.getPrepared()== null || "".equals(poMaster.getPrepared())) {
