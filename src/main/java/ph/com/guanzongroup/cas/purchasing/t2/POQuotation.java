@@ -1307,7 +1307,7 @@ public class POQuotation extends Transaction {
     }
     
     /*Load*/
-    public JSONObject loadPOQuotationList(String fsBranch, String fsDepartment ,String fsSupplier, String fsCateogry, String fsTransactionNo) {
+    public JSONObject loadPOQuotationList(String fsBranch, String fsDepartment ,String fsSupplier, String fsCateogry, String fsSourceNo) {
         try {
             String lsBranch = fsBranch != null && !"".equals(fsBranch) 
                                                         ? " AND c.sBranchNm LIKE " + SQLUtil.toSQL("%"+fsBranch)
@@ -1325,8 +1325,8 @@ public class POQuotation extends Transaction {
                                                         ? " AND i.sCompnyNm LIKE " + SQLUtil.toSQL("%"+fsSupplier)
                                                         : "";
 
-            String lsTransactionNo = fsTransactionNo != null && !"".equals(fsTransactionNo) 
-                                                        ? " AND a.sTransNox LIKE " + SQLUtil.toSQL("%"+fsTransactionNo)
+            String lsSourceNo = fsSourceNo != null && !"".equals(fsSourceNo) 
+                                                        ? " AND a.sSourceNo LIKE " + SQLUtil.toSQL("%"+fsSourceNo)
                                                         : "";
 
             String lsTransStat = "";
@@ -1348,7 +1348,7 @@ public class POQuotation extends Transaction {
                     + lsDepartment
                     + lsCategory
                     + lsSupplier
-                    + lsTransactionNo
+                    + lsSourceNo
             );
 
             if (lsTransStat != null && !"".equals(lsTransStat)) {
@@ -2169,6 +2169,7 @@ public class POQuotation extends Transaction {
                     + "   , a.sReferNox  "
                     + "   , a.cTranStat  "
                     + "   , a.sCompnyID  "
+                    + "   , a.sSourceNo  "
                     + "   , b.sDescript AS Industry      "
                     + "   , c.sBranchNm AS Branch        "
                     + "   , f.sDescript AS Category2     "

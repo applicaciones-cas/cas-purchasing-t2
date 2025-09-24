@@ -1694,9 +1694,12 @@ public class POQuotationRequest extends Transaction {
             Master().setBranchCode(poGRider.getBranchCode());
             Master().setIndustryId(psIndustryId);
             Master().setCategoryCode(psCategorCd);
-            Master().setDepartmentId(poGRider.getDepartment());
             Master().setTransactionDate(poGRider.getServerDate());
             Master().setTransactionStatus(POQuotationRequestStatus.OPEN);
+            
+            //TODO Hardcode Default value is for sir jeff
+            Master().setDepartmentId("033"); // Autoset Department of procurement
+            Master().setDestination("M001"); //Autoset Destination of sir jeff
             
         } catch (SQLException ex) {
             Logger.getLogger(getClass().getName()).log(Level.SEVERE, MiscUtil.getException(ex), ex);
