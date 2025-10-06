@@ -411,6 +411,66 @@ public class POQuotation extends Transaction {
         return poJSON;
     }
     
+    public JSONObject PostTransaction(String remarks)
+            throws ParseException,
+            SQLException,
+            GuanzonException,
+            CloneNotSupportedException {
+        poJSON = new JSONObject();
+
+        String lsStatus = POQuotationStatus.POSTED;
+        boolean lbPosted = true;
+
+        if (getEditMode() != EditMode.READY) {
+            poJSON.put("result", "error");
+            poJSON.put("message", "No transacton was loaded.");
+            return poJSON;
+        }
+
+        if (lsStatus.equals((String) poMaster.getValue("cTranStat"))) {
+            poJSON.put("result", "error");
+            poJSON.put("message", "Transaction was already posted.");
+            return poJSON;
+        }
+
+        //validator
+        poJSON = isEntryOkay(POQuotationStatus.POSTED);
+        if (!"success".equals((String) poJSON.get("result"))) {
+            return poJSON;
+        }
+
+//        if (POQuotationStatus.POSTED.equals(Master().getTransactionStatus())) {
+//            if (poGRider.getUserLevel() <= UserRight.ENCODER) {
+//                poJSON = ShowDialogFX.getUserApproval(poGRider);
+//                if (!"success".equals((String) poJSON.get("result"))) {
+//                    return poJSON;
+//                } else {
+//                    if(Integer.parseInt(poJSON.get("nUserLevl").toString())<= UserRight.ENCODER){
+//                        poJSON.put("result", "error");
+//                        poJSON.put("message", "User is not an authorized approving officer.");
+//                        return poJSON;
+//                    }
+//                }
+//            }
+//        }
+        
+        //change status
+        poJSON = statusChange(poMaster.getTable(), (String) poMaster.getValue("sTransNox"), remarks, lsStatus, !lbPosted);
+        if (!"success".equals((String) poJSON.get("result"))) {
+            return poJSON;
+        }
+
+        poJSON = new JSONObject();
+        poJSON.put("result", "success");
+        if (lbPosted) {
+            poJSON.put("message", "Transaction posted successfully.");
+        } else {
+            poJSON.put("message", "Transaction posting request submitted successfully.");
+        }
+
+        return poJSON;
+    }
+    
     /*Search References*/
     public JSONObject searchTransaction()
             throws CloneNotSupportedException,
