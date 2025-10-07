@@ -312,7 +312,10 @@ public class Model_PO_Quotation_Detail extends Model {
         poJSON = new JSONObject();
         String lsSQL = MiscUtil.makeSelect(this);
         lsSQL = MiscUtil.addCondition(lsSQL, " sTransNox = " + SQLUtil.toSQL(transactionNo) 
-                                        + " AND sStockIDx = " + SQLUtil.toSQL(stockId));
+                                        + " AND ( sStockIDx = " + SQLUtil.toSQL(stockId)
+                                        + " OR sReplacID = " + SQLUtil.toSQL(stockId)
+                                        + " )"
+                                        );
         System.out.println("Executing SQL: " + lsSQL);
         ResultSet loRS = poGRider.executeQuery(lsSQL);
         try {
