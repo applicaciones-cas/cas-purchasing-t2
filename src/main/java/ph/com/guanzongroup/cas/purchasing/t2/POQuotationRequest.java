@@ -789,7 +789,7 @@ public class POQuotationRequest extends Transaction {
             if ("success".equals((String) poJSON.get("result"))) {
                 JSONObject loJSON = checkExistingDetail(row,
                         object.getModel().getStockId(),
-                        object.getModel().getDescription(), 
+                        object.getModel().getDescription().trim(), 
                         true
                         );
                 if ("error".equals((String) loJSON.get("result"))) {
@@ -802,7 +802,7 @@ public class POQuotationRequest extends Transaction {
                 }
 
                 Detail(row).setStockId(object.getModel().getStockId());
-                Detail(row).setDescription(object.getModel().getDescription());
+                Detail(row).setDescription(object.getModel().getDescription().trim());
                 Detail(row).setBrandId(object.getModel().getBrandId());
                 Detail(row).setModelId(object.getModel().getModelId());
                    
