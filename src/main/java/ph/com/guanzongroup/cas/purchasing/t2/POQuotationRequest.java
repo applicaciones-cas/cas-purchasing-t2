@@ -781,7 +781,7 @@ public class POQuotationRequest extends Transaction {
                 value,
                 "Barcode»Description»Brand»Model»Variant»UOM",
                 "sBarCodex»sDescript»xBrandNme»xModelNme»xVrntName»xMeasurNm",
-                "a.sBarCodex»a.sDescript»IFNULL(b.sDescript, '')»IFNULL(c.sDescript, '')»IFNULL(f.sDescript, '')»IFNULL(e.sDescript, '')",
+                "a.sBarCodex»TRIM(a.sDescript)»IFNULL(b.sDescript, '')»IFNULL(c.sDescript, '')»IFNULL(f.sDescript, '')»IFNULL(e.sDescript, '')",
                 byCode ? 0 : 1);
 
         if (poJSON != null) {
