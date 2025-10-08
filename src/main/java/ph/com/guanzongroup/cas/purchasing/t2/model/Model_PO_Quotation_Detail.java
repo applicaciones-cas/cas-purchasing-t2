@@ -5,11 +5,13 @@
  */
 package ph.com.guanzongroup.cas.purchasing.t2.model;
 
+import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.util.Date;
 import org.guanzon.appdriver.agent.services.Model;
 import org.guanzon.appdriver.base.GuanzonException;
 import org.guanzon.appdriver.base.MiscUtil;
+import org.guanzon.appdriver.base.SQLUtil;
 import org.guanzon.appdriver.constant.EditMode;
 import org.guanzon.cas.inv.model.Model_Inv_Master;
 import org.guanzon.cas.inv.model.Model_Inventory;
@@ -306,5 +308,37 @@ public class Model_PO_Quotation_Detail extends Model {
         }
     }
     
+    public JSONObject openRecord(String transactionNo, String stockId) throws SQLException, GuanzonException {
+        poJSON = new JSONObject();
+        String lsSQL = MiscUtil.makeSelect(this);
+        lsSQL = MiscUtil.addCondition(lsSQL, " sTransNox = " + SQLUtil.toSQL(transactionNo) 
+                                        + " AND ( sStockIDx = " + SQLUtil.toSQL(stockId)
+                                        + " OR sReplacID = " + SQLUtil.toSQL(stockId)
+                                        + " )"
+                                        );
+        System.out.println("Executing SQL: " + lsSQL);
+        ResultSet loRS = poGRider.executeQuery(lsSQL);
+        try {
+            if (loRS.next()) {
+                for (int lnCtr = 1; lnCtr <= loRS.getMetaData().getColumnCount(); lnCtr++){
+                    setValue(lnCtr, loRS.getObject(lnCtr)); 
+                }
+                MiscUtil.close(loRS);
+                pnEditMode = EditMode.READY;
+                poJSON = new JSONObject();
+                poJSON.put("result", "success");
+                poJSON.put("message", "Record loaded successfully.");
+            } else {
+                poJSON = new JSONObject();
+                poJSON.put("result", "error");
+                poJSON.put("message", "No record to load.");
+            } 
+        } catch (SQLException e) {
+            poJSON = new JSONObject();
+            poJSON.put("result", "error");
+            poJSON.put("message", e.getMessage());
+        } 
+        return poJSON;
+    }
     //end reference object models
 }
