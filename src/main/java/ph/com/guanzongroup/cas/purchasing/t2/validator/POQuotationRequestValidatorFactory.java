@@ -23,6 +23,7 @@ public class POQuotationRequestValidatorFactory {
             case "04": //Monarch 
                 return new POQuotationRequest_Monarch();
             case "05": //Los Pedritos
+            case "09": //General
                 return new POQuotationRequest_LP();
             case "07": //Appliances
                 return new POQuotationRequest_Appliances();
