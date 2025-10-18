@@ -113,6 +113,30 @@ public class POQuotation extends Transaction {
         return updateTransaction();
     }
     
+    /**
+     * Seek for Approval
+     * @return JSON
+     */
+    public JSONObject seekApproval(){
+        poJSON = new JSONObject();
+        if (poGRider.getUserLevel() <= UserRight.ENCODER) {
+            poJSON = ShowDialogFX.getUserApproval(poGRider);
+            if (!"success".equals((String) poJSON.get("result"))) {
+                return poJSON;
+            } else {
+                if(Integer.parseInt(poJSON.get("nUserLevl").toString())<= UserRight.ENCODER){
+                    poJSON.put("result", "error");
+                    poJSON.put("message", "User is not an authorized approving officer.");
+                    return poJSON;
+                }
+            }
+        }
+        
+        poJSON.put("result", "success");
+        poJSON.put("message", "success");
+        return poJSON;
+    }
+    
     public JSONObject ConfirmTransaction(String remarks)
             throws ParseException,
             SQLException,
@@ -121,7 +145,6 @@ public class POQuotation extends Transaction {
         poJSON = new JSONObject();
 
         String lsStatus = POQuotationStatus.CONFIRMED;
-        boolean lbConfirm = true;
 
         if (getEditMode() != EditMode.READY) {
             poJSON.put("result", "error");
@@ -141,33 +164,21 @@ public class POQuotation extends Transaction {
             return poJSON;
         }
                 
-        if (poGRider.getUserLevel() <= UserRight.ENCODER) {
-            poJSON = ShowDialogFX.getUserApproval(poGRider);
-            if (!"success".equals((String) poJSON.get("result"))) {
-                return poJSON;
-            } else {
-                if(Integer.parseInt(poJSON.get("nUserLevl").toString())<= UserRight.ENCODER){
-                    poJSON.put("result", "error");
-                    poJSON.put("message", "User is not an authorized approving officer.");
-                    return poJSON;
-                }
-            }
+        //seek for approval
+        poJSON =  seekApproval();
+        if (!"success".equals((String) poJSON.get("result"))) {
+            return poJSON;
         }
         
         //change status
-        poJSON = statusChange(poMaster.getTable(), (String) poMaster.getValue("sTransNox"), remarks, lsStatus, !lbConfirm);
+        poJSON = statusChange(poMaster.getTable(), (String) poMaster.getValue("sTransNox"), remarks, lsStatus, false);
         if (!"success".equals((String) poJSON.get("result"))) {
             return poJSON;
         }
 
         poJSON = new JSONObject();
         poJSON.put("result", "success");
-        if (lbConfirm) {
-            poJSON.put("message", "Transaction confirmed successfully.");
-        } else {
-            poJSON.put("message", "Transaction confirmation request submitted successfully.");
-        }
-
+        poJSON.put("message", "Transaction confirmed successfully.");
         return poJSON;
     }
     
@@ -179,7 +190,6 @@ public class POQuotation extends Transaction {
         poJSON = new JSONObject();
 
         String lsStatus = POQuotationStatus.APPROVED;
-        boolean lbApprove = true;
 
         if (getEditMode() != EditMode.READY) {
             poJSON.put("result", "error");
@@ -194,42 +204,28 @@ public class POQuotation extends Transaction {
         }
 
         //validator
-        poJSON = isEntryOkay(POQuotationStatus.APPROVED);
+        poJSON = isEntryOkay(lsStatus);
         if (!"success".equals((String) poJSON.get("result"))) {
             return poJSON;
         }
         
+        //seek for approval
         if(!pbWthParent){
-            if (POQuotationStatus.CONFIRMED.equals(Master().getTransactionStatus())) {
-                if (poGRider.getUserLevel() <= UserRight.ENCODER) {
-                    poJSON = ShowDialogFX.getUserApproval(poGRider);
-                    if (!"success".equals((String) poJSON.get("result"))) {
-                        return poJSON;
-                    } else {
-                        if(Integer.parseInt(poJSON.get("nUserLevl").toString())<= UserRight.ENCODER){
-                            poJSON.put("result", "error");
-                            poJSON.put("message", "User is not an authorized approving officer.");
-                            return poJSON;
-                        }
-                    }
-                }
+            poJSON =  seekApproval();
+            if (!"success".equals((String) poJSON.get("result"))) {
+                return poJSON;
             }
         }
         
         //change status
-        poJSON = statusChange(poMaster.getTable(), (String) poMaster.getValue("sTransNox"), remarks, lsStatus, !lbApprove, pbWthParent);
+        poJSON = statusChange(poMaster.getTable(), (String) poMaster.getValue("sTransNox"), remarks, lsStatus, false, pbWthParent);
         if (!"success".equals((String) poJSON.get("result"))) {
             return poJSON;
         }
 
         poJSON = new JSONObject();
         poJSON.put("result", "success");
-        if (lbApprove) {
-            poJSON.put("message", "Transaction approved successfully.");
-        } else {
-            poJSON.put("message", "Transaction approving request submitted successfully.");
-        }
-
+        poJSON.put("message", "Transaction approved successfully.");
         return poJSON;
     }
     
@@ -241,7 +237,6 @@ public class POQuotation extends Transaction {
         poJSON = new JSONObject();
 
         String lsStatus = POQuotationStatus.CANCELLED;
-        boolean lbCancel = true;
 
         if (getEditMode() != EditMode.READY) {
             poJSON.put("result", "error");
@@ -256,40 +251,26 @@ public class POQuotation extends Transaction {
         }
 
         //validator
-        poJSON = isEntryOkay(POQuotationStatus.CANCELLED);
+        poJSON = isEntryOkay(lsStatus);
         if (!"success".equals((String) poJSON.get("result"))) {
             return poJSON;
         }
-
-        if (POQuotationStatus.CONFIRMED.equals(Master().getTransactionStatus())) {
-            if (poGRider.getUserLevel() <= UserRight.ENCODER) {
-                poJSON = ShowDialogFX.getUserApproval(poGRider);
-                if (!"success".equals((String) poJSON.get("result"))) {
-                    return poJSON;
-                } else {
-                    if(Integer.parseInt(poJSON.get("nUserLevl").toString())<= UserRight.ENCODER){
-                        poJSON.put("result", "error");
-                        poJSON.put("message", "User is not an authorized approving officer.");
-                        return poJSON;
-                    }
-                }
-            }
+        
+        //seek for approval
+        poJSON =  seekApproval();
+        if (!"success".equals((String) poJSON.get("result"))) {
+            return poJSON;
         }
         
         //change status
-        poJSON = statusChange(poMaster.getTable(), (String) poMaster.getValue("sTransNox"), remarks, lsStatus, !lbCancel);
+        poJSON = statusChange(poMaster.getTable(), (String) poMaster.getValue("sTransNox"), remarks, lsStatus, false);
         if (!"success".equals((String) poJSON.get("result"))) {
             return poJSON;
         }
 
         poJSON = new JSONObject();
         poJSON.put("result", "success");
-        if (lbCancel) {
-            poJSON.put("message", "Transaction disapproved successfully.");
-        } else {
-            poJSON.put("message", "Transaction disapproveding request submitted successfully.");
-        }
-
+        poJSON.put("message", "Transaction disapproved successfully.");
         return poJSON;
     }
     
@@ -321,35 +302,23 @@ public class POQuotation extends Transaction {
             return poJSON;
         }
 
+        //seek for approval
         if (POQuotationStatus.CONFIRMED.equals(Master().getTransactionStatus())) {
-            if (poGRider.getUserLevel() <= UserRight.ENCODER) {
-                poJSON = ShowDialogFX.getUserApproval(poGRider);
-                if (!"success".equals((String) poJSON.get("result"))) {
-                    return poJSON;
-                } else {
-                    if(Integer.parseInt(poJSON.get("nUserLevl").toString())<= UserRight.ENCODER){
-                        poJSON.put("result", "error");
-                        poJSON.put("message", "User is not an authorized approving officer.");
-                        return poJSON;
-                    }
-                }
+            poJSON =  seekApproval();
+            if (!"success".equals((String) poJSON.get("result"))) {
+                return poJSON;
             }
         }
         
         //change status
-        poJSON = statusChange(poMaster.getTable(), (String) poMaster.getValue("sTransNox"), remarks, lsStatus, !lbVoid);
+        poJSON = statusChange(poMaster.getTable(), (String) poMaster.getValue("sTransNox"), remarks, lsStatus, false);
         if (!"success".equals((String) poJSON.get("result"))) {
             return poJSON;
         }
 
         poJSON = new JSONObject();
         poJSON.put("result", "success");
-        if (lbVoid) {
-            poJSON.put("message", "Transaction voided successfully.");
-        } else {
-            poJSON.put("message", "Transaction voiding request submitted successfully.");
-        }
-
+        poJSON.put("message", "Transaction voided successfully.");
         return poJSON;
     }
     
@@ -361,7 +330,6 @@ public class POQuotation extends Transaction {
         poJSON = new JSONObject();
 
         String lsStatus = POQuotationStatus.CANCELLED;
-        boolean lbCancel = true;
 
         if (getEditMode() != EditMode.READY) {
             poJSON.put("result", "error");
@@ -376,40 +344,28 @@ public class POQuotation extends Transaction {
         }
 
         //validator
-        poJSON = isEntryOkay(POQuotationStatus.CANCELLED);
+        poJSON = isEntryOkay(lsStatus);
         if (!"success".equals((String) poJSON.get("result"))) {
             return poJSON;
         }
 
         if (POQuotationStatus.CONFIRMED.equals(Master().getTransactionStatus())) {
-            if (poGRider.getUserLevel() <= UserRight.ENCODER) {
-                poJSON = ShowDialogFX.getUserApproval(poGRider);
-                if (!"success".equals((String) poJSON.get("result"))) {
-                    return poJSON;
-                } else {
-                    if(Integer.parseInt(poJSON.get("nUserLevl").toString())<= UserRight.ENCODER){
-                        poJSON.put("result", "error");
-                        poJSON.put("message", "User is not an authorized approving officer.");
-                        return poJSON;
-                    }
-                }
+            //seek for approval
+            poJSON =  seekApproval();
+            if (!"success".equals((String) poJSON.get("result"))) {
+                return poJSON;
             }
         }
         
         //change status
-        poJSON = statusChange(poMaster.getTable(), (String) poMaster.getValue("sTransNox"), remarks, lsStatus, !lbCancel);
+        poJSON = statusChange(poMaster.getTable(), (String) poMaster.getValue("sTransNox"), remarks, lsStatus, false);
         if (!"success".equals((String) poJSON.get("result"))) {
             return poJSON;
         }
 
         poJSON = new JSONObject();
         poJSON.put("result", "success");
-        if (lbCancel) {
-            poJSON.put("message", "Transaction cancelled successfully.");
-        } else {
-            poJSON.put("message", "Transaction cancellation request submitted successfully.");
-        }
-
+        poJSON.put("message", "Transaction cancelled successfully.");
         return poJSON;
     }
     
@@ -421,7 +377,6 @@ public class POQuotation extends Transaction {
         poJSON = new JSONObject();
 
         String lsStatus = POQuotationStatus.POSTED;
-        boolean lbPosted = true;
 
         if (getEditMode() != EditMode.READY) {
             poJSON.put("result", "error");
@@ -436,40 +391,73 @@ public class POQuotation extends Transaction {
         }
 
         //validator
-        poJSON = isEntryOkay(POQuotationStatus.POSTED);
+        poJSON = isEntryOkay(lsStatus);
         if (!"success".equals((String) poJSON.get("result"))) {
             return poJSON;
         }
         
         if(!pbWthParent){
-            if (poGRider.getUserLevel() <= UserRight.ENCODER) {
-                poJSON = ShowDialogFX.getUserApproval(poGRider);
-                if (!"success".equals((String) poJSON.get("result"))) {
-                    return poJSON;
-                } else {
-                    if(Integer.parseInt(poJSON.get("nUserLevl").toString())<= UserRight.ENCODER){
-                        poJSON.put("result", "error");
-                        poJSON.put("message", "User is not an authorized approving officer.");
-                        return poJSON;
-                    }
-                }
+            //seek for approval
+            poJSON =  seekApproval();
+            if (!"success".equals((String) poJSON.get("result"))) {
+                return poJSON;
             }
         }
         
         //change status
-        poJSON = statusChange(poMaster.getTable(), (String) poMaster.getValue("sTransNox"), remarks, lsStatus, !lbPosted, pbWthParent);
+        poJSON = statusChange(poMaster.getTable(), (String) poMaster.getValue("sTransNox"), remarks, lsStatus, false, pbWthParent);
         if (!"success".equals((String) poJSON.get("result"))) {
             return poJSON;
         }
 
         poJSON = new JSONObject();
         poJSON.put("result", "success");
-        if (lbPosted) {
-            poJSON.put("message", "Transaction posted successfully.");
-        } else {
-            poJSON.put("message", "Transaction posting request submitted successfully.");
+        poJSON.put("message", "Transaction posted successfully.");
+        return poJSON;
+    }
+    
+    public JSONObject ReturnTransaction(String remarks)
+            throws ParseException,
+            SQLException,
+            GuanzonException,
+            CloneNotSupportedException {
+        poJSON = new JSONObject();
+
+        String lsStatus = POQuotationStatus.RETURNED;
+
+        if (getEditMode() != EditMode.READY) {
+            poJSON.put("result", "error");
+            poJSON.put("message", "No transacton was loaded.");
+            return poJSON;
         }
 
+        if (lsStatus.equals((String) poMaster.getValue("cTranStat"))) {
+            poJSON.put("result", "error");
+            poJSON.put("message", "Transaction was already confirmed.");
+            return poJSON;
+        }
+
+        //validator
+        poJSON = isEntryOkay(lsStatus);
+        if (!"success".equals((String) poJSON.get("result"))) {
+            return poJSON;
+        }
+                
+        //seek for approval
+        poJSON =  seekApproval();
+        if (!"success".equals((String) poJSON.get("result"))) {
+            return poJSON;
+        }
+        
+        //change status
+        poJSON = statusChange(poMaster.getTable(), (String) poMaster.getValue("sTransNox"), remarks, lsStatus, false);
+        if (!"success".equals((String) poJSON.get("result"))) {
+            return poJSON;
+        }
+
+        poJSON = new JSONObject();
+        poJSON.put("result", "success");
+        poJSON.put("message", "Transaction returned successfully.");
         return poJSON;
     }
     
