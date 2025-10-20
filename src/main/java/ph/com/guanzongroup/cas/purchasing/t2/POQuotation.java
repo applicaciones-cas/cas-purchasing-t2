@@ -434,7 +434,7 @@ public class POQuotation extends Transaction {
 
         if (lsStatus.equals((String) poMaster.getValue("cTranStat"))) {
             poJSON.put("result", "error");
-            poJSON.put("message", "Transaction was already confirmed.");
+            poJSON.put("message", "Transaction was already returned.");
             return poJSON;
         }
 
