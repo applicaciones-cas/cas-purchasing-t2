@@ -1358,7 +1358,7 @@ public class POQuotation extends Transaction {
     }
     
     /*Load*/
-    public JSONObject loadPOQuotationList(String fsBranch, String fsDepartment ,String fsSupplier, String fsCateogry, String fsSourceNo) {
+    public JSONObject loadPOQuotationList(String fsBranch, String fsDepartment ,String fsSupplier, String fsCateogry, String fsSourceNo, boolean isApproval) {
         try {
             String lsBranch = fsBranch != null && !"".equals(fsBranch) 
                                                         ? " AND c.sBranchNm LIKE " + SQLUtil.toSQL("%"+fsBranch)
@@ -1379,6 +1379,12 @@ public class POQuotation extends Transaction {
             String lsSourceNo = fsSourceNo != null && !"".equals(fsSourceNo) 
                                                         ? " AND a.sSourceNo LIKE " + SQLUtil.toSQL("%"+fsSourceNo)
                                                         : "";
+            
+            //LOAD only PO Quotation that is not yet linked to po_detail whether po is cancelled as long as it was already linked to PO it should not be include in retrieval
+            String lsApproval = "";
+            if(isApproval){
+                lsApproval =  " AND a.sTransNox NOT IN (SELECT po_detail.sSourceNo from po_detail WHERE po_detail.sSourceNo = a.sTransNox AND po_detail.sSourceCd = "+SQLUtil.toSQL(getSourceCode())+" ) ";
+            }
 
             String lsTransStat = "";
             if (psTranStat != null) {
@@ -1399,8 +1405,8 @@ public class POQuotation extends Transaction {
                     + lsDepartment
                     + lsCategory
                     + lsSupplier
-                    + lsSourceNo
-            );
+                    + lsSourceNo )
+                    + lsApproval ;
 
             if (lsTransStat != null && !"".equals(lsTransStat)) {
                 lsSQL = lsSQL + lsTransStat;
