@@ -14,6 +14,7 @@ import java.util.ArrayList;
 import java.util.Date;
 import java.util.Iterator;
 import java.util.List;
+import java.util.Objects;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 import org.guanzon.appdriver.agent.ShowDialogFX;
@@ -1949,19 +1950,96 @@ public class POQuotation extends Transaction {
             return poJSON;
         }
         
-        if (POQuotationStatus.CONFIRMED.equals(Master().getTransactionStatus())) {
-            if (poGRider.getUserLevel() <= UserRight.ENCODER) {
-                poJSON = ShowDialogFX.getUserApproval(poGRider);
-                if (!"success".equals((String) poJSON.get("result"))) {
-                    return poJSON;
-                } else {
-                    if(Integer.parseInt(poJSON.get("nUserLevl").toString())<= UserRight.ENCODER){
-                        poJSON.put("result", "error");
-                        poJSON.put("message", "User is not an authorized approving officer.");
-                        return poJSON;
+        //if current status is Return check changes
+        if(POQuotationRequestStatus.RETURNED.equals(Master().getTransactionStatus())){
+            boolean lbUpdated = false;
+            POQuotation loRecord = new QuotationControllers(poGRider, null).POQuotation();
+            loRecord.InitTransaction();
+            if ("error".equals((String) poJSON.get("result"))) {
+                return poJSON;
+            }
+            loRecord.OpenTransaction(Master().getTransactionNo());
+            if ("error".equals((String) poJSON.get("result"))) {
+                return poJSON;
+            }
+            
+            lbUpdated = loRecord.getDetailCount() == getDetailCount();
+            if (lbUpdated) {
+                lbUpdated = loRecord.Master().getReferenceNo().equals(Master().getReferenceNo());
+            }
+            if (lbUpdated) {
+                lbUpdated = loRecord.Master().getReferenceDate().equals(Master().getReferenceDate());
+            }
+            if (lbUpdated) {
+                lbUpdated = loRecord.Master().getSupplierId().equals(Master().getSupplierId());
+            }
+            if (lbUpdated) {
+                lbUpdated = loRecord.Master().getTerm().equals(Master().getTerm());
+            }
+            if (lbUpdated) {
+                lbUpdated = Objects.equals(loRecord.Master().getGrossAmount(), Master().getGrossAmount());
+            }
+            if (lbUpdated) {
+                lbUpdated = Objects.equals(loRecord.Master().getFreightAmount(), Master().getFreightAmount());
+            }
+            if (lbUpdated) {
+                lbUpdated = Objects.equals(loRecord.Master().getDiscountRate(), Master().getDiscountRate());
+            }
+            if (lbUpdated) {
+                lbUpdated = Objects.equals(loRecord.Master().getAdditionalDiscountAmount(), Master().getAdditionalDiscountAmount());
+            }
+            if (lbUpdated) {
+                lbUpdated = loRecord.Master().isVatable() == Master().isVatable();
+            }
+            if (lbUpdated) {
+                lbUpdated = loRecord.Master().getRemarks().equals(Master().getRemarks());
+            }
+
+            if (lbUpdated) {
+                for (int lnCtr = 0; lnCtr <= loRecord.getDetailCount() - 1; lnCtr++) {
+                    lbUpdated = loRecord.Detail(lnCtr).getStockId().equals(Detail(lnCtr).getStockId());
+                    if (lbUpdated) {
+                        lbUpdated = loRecord.Detail(lnCtr).getQuantity().doubleValue() == Detail(lnCtr).getQuantity().doubleValue();
+                    } 
+                    if (lbUpdated) {
+                        lbUpdated = loRecord.Detail(lnCtr).getDescription().equals(Detail(lnCtr).getDescription());
+                    }
+                    if (lbUpdated) {
+                        lbUpdated = loRecord.Detail(lnCtr).getReplaceId().equals(Detail(lnCtr).getReplaceId());
+                    }
+                    if (lbUpdated) {
+                        lbUpdated = loRecord.Detail(lnCtr).getReplaceDescription().equals(Detail(lnCtr).getReplaceDescription());
+                    }
+                    if (!lbUpdated) {
+                        break;
                     }
                 }
             }
+
+            if (lbUpdated) {
+                poJSON.put("result", "error");
+                poJSON.put("message", "No update has been made.");
+                return poJSON;
+            }
+        
+        }
+        
+        switch(Master().getTransactionStatus()){
+            case POQuotationStatus.CONFIRMED:
+            case POQuotationStatus.RETURNED:
+                if (poGRider.getUserLevel() <= UserRight.ENCODER) {
+                    poJSON = ShowDialogFX.getUserApproval(poGRider);
+                    if (!"success".equals((String) poJSON.get("result"))) {
+                        return poJSON;
+                    } else {
+                        if(Integer.parseInt(poJSON.get("nUserLevl").toString())<= UserRight.ENCODER){
+                            poJSON.put("result", "error");
+                            poJSON.put("message", "User is not an authorized approving officer.");
+                            return poJSON;
+                        }
+                    }
+                }
+            break;
         }
 
         if (paDetailRemoved == null) {

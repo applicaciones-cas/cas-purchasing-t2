@@ -53,6 +53,7 @@ import org.json.simple.parser.ParseException;
 import ph.com.guanzongroup.cas.purchasing.t2.model.Model_PO_Quotation_Request_Detail;
 import ph.com.guanzongroup.cas.purchasing.t2.model.Model_PO_Quotation_Request_Master;
 import ph.com.guanzongroup.cas.purchasing.t2.model.Model_PO_Quotation_Request_Supplier;
+import ph.com.guanzongroup.cas.purchasing.t2.services.QuotationControllers;
 import ph.com.guanzongroup.cas.purchasing.t2.services.QuotationModels;
 import ph.com.guanzongroup.cas.purchasing.t2.status.POQuotationRequestStatus;
 import ph.com.guanzongroup.cas.purchasing.t2.validator.POQuotationRequestValidatorFactory;
@@ -1489,14 +1490,73 @@ public class POQuotationRequest extends Transaction {
         /*Put system validations and other assignments here*/
         poJSON = new JSONObject();
         
-        if (POQuotationRequestStatus.CONFIRMED.equals(Master().getTransactionStatus())) {
-            //seek for approval
-            poJSON =  seekApproval();
-            if (!"success".equals((String) poJSON.get("result"))) {
+        //if current status is Return check changes
+        if(POQuotationRequestStatus.RETURNED.equals(Master().getTransactionStatus())){
+            boolean lbUpdated = false;
+            POQuotationRequest loRecord = new QuotationControllers(poGRider, null).POQuotationRequest();
+            loRecord.InitTransaction();
+            if ("error".equals((String) poJSON.get("result"))) {
                 return poJSON;
             }
-        }
+            loRecord.OpenTransaction(Master().getTransactionNo());
+            if ("error".equals((String) poJSON.get("result"))) {
+                return poJSON;
+            }
+            
+            lbUpdated = loRecord.getDetailCount() == getDetailCount();
+            if (lbUpdated) {
+                lbUpdated = loRecord.getPOQuotationRequestCount() == getPOQuotationRequestCount();
+            }
+            if (lbUpdated) {
+                lbUpdated = loRecord.Master().getReferenceNo().equals(Master().getReferenceNo());
+            }
+            if (lbUpdated) {
+                lbUpdated = loRecord.Master().getCategoryLevel2().equals(Master().getCategoryLevel2());
+            }
+            if (lbUpdated) {
+                lbUpdated = loRecord.Master().getExpectedPurchaseDate().equals(Master().getExpectedPurchaseDate());
+            }
+            if (lbUpdated) {
+                lbUpdated = loRecord.Master().getDestination().equals(Master().getDestination());
+            }
+            if (lbUpdated) {
+                lbUpdated = loRecord.Master().getRemarks().equals(Master().getRemarks());
+            }
 
+            if (lbUpdated) {
+                for (int lnCtr = 0; lnCtr <= loRecord.getDetailCount() - 1; lnCtr++) {
+                    lbUpdated = loRecord.Detail(lnCtr).getStockId().equals(Detail(lnCtr).getStockId());
+                    if (lbUpdated) {
+                        lbUpdated = loRecord.Detail(lnCtr).getQuantity().doubleValue() == Detail(lnCtr).getQuantity().doubleValue();
+                    } 
+                    if (lbUpdated) {
+                        lbUpdated = loRecord.Detail(lnCtr).getDescription().equals(Detail(lnCtr).getDescription());
+                    }
+                    if (!lbUpdated) {
+                        break;
+                    }
+                }
+            }
+
+            if (lbUpdated) {
+                poJSON.put("result", "error");
+                poJSON.put("message", "No update has been made.");
+                return poJSON;
+            }
+        
+        }
+        
+        switch(Master().getTransactionStatus()){
+            case POQuotationRequestStatus.CONFIRMED:
+            case POQuotationRequestStatus.RETURNED:
+                //seek for approval
+                poJSON =  seekApproval();
+                if (!"success".equals((String) poJSON.get("result"))) {
+                    return poJSON;
+                }
+            break;
+        }
+        
         if (paDetailRemoved == null) {
             paDetailRemoved = new ArrayList<>();
         }
