@@ -17,6 +17,7 @@ import java.util.HashMap;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 import net.sf.jasperreports.engine.JRException;
@@ -1503,10 +1504,7 @@ public class POQuotationRequest extends Transaction {
                 return poJSON;
             }
             
-            lbUpdated = loRecord.getDetailCount() == getDetailCount();
-            if (lbUpdated) {
-                lbUpdated = loRecord.getPOQuotationRequestCount() == getPOQuotationRequestCount();
-            }
+            lbUpdated = loRecord.getDetailCount() == (getDetailCount() - 1);
             if (lbUpdated) {
                 lbUpdated = loRecord.Master().getReferenceNo().equals(Master().getReferenceNo());
             }
@@ -1514,7 +1512,7 @@ public class POQuotationRequest extends Transaction {
                 lbUpdated = loRecord.Master().getCategoryLevel2().equals(Master().getCategoryLevel2());
             }
             if (lbUpdated) {
-                lbUpdated = loRecord.Master().getExpectedPurchaseDate().equals(Master().getExpectedPurchaseDate());
+                lbUpdated = Objects.equals(loRecord.Master().getExpectedPurchaseDate(), Master().getExpectedPurchaseDate());
             }
             if (lbUpdated) {
                 lbUpdated = loRecord.Master().getDestination().equals(Master().getDestination());

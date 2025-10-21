@@ -1969,12 +1969,12 @@ public class POQuotation extends Transaction {
                 return poJSON;
             }
             
-            lbUpdated = loRecord.getDetailCount() == getDetailCount();
+            lbUpdated = loRecord.getDetailCount() == (getDetailCount() - 1);
             if (lbUpdated) {
                 lbUpdated = loRecord.Master().getReferenceNo().equals(Master().getReferenceNo());
             }
             if (lbUpdated) {
-                lbUpdated = loRecord.Master().getReferenceDate().equals(Master().getReferenceDate());
+                lbUpdated = Objects.equals(loRecord.Master().getReferenceDate(), Master().getReferenceDate());
             }
             if (lbUpdated) {
                 lbUpdated = loRecord.Master().getSupplierId().equals(Master().getSupplierId());
