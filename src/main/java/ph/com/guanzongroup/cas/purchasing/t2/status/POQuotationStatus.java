@@ -16,8 +16,9 @@ public class POQuotationStatus {
     public static final  String CANCELLED = "3";
     public static final  String VOID = "4";
     public static final  String POSTED = "5"; 
+    public static final  String RETURNED = "9"; 
     
-    //0 as new entry, 1 = confirmed, 2 = approved, 3 = cancelled, 4 = Void, 5 = Posted / Ordered
+    //0 as new entry, 1 = confirmed, 2 = approved, 3 = cancelled, 4 = Void, 5 = Posted / Ordered; 9 = Returned
     
     public static class Reverse  {
         public static final  String INCLUDE = "+"; 
